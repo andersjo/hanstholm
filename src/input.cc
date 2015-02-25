@@ -110,7 +110,6 @@ vector<CSentence> VwSentenceReader::read() {
     line_no = 1;
     
     string line;
-    vector<string> chunk;
     while (std::getline(infile, line)) {
         if (line.size() == 0) {
             finish_sentence();

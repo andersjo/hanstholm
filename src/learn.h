@@ -43,7 +43,7 @@ public:
 
     }
     void fit(std::vector<CSentence> & sentences);
-    ParseResult parse(CSentence &);
+    // ParseResult parse(CSentence &);
 private:
     void score_moves(std::vector<FeatureKey> &features);
     LabeledMove predict_move();

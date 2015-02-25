@@ -1,7 +1,4 @@
 #include "features.h"
-#include <iostream>
-#include <cassert>
-#include <stddef.h>
 
 using namespace std;
 
@@ -121,23 +118,6 @@ AttributeExtractor::AttributeExtractor(string name, namespace_t ns, state_locati
     
 }
 
-const vector<Attribute> & AttributeExtractor::extract(const CParseState & state, const CSentence & sent) const {
-    auto loc = state.locations();
-    auto token_index = loc.at(location);
-    
-    if (token_index != -1) {
-        auto & token = sent.tokens[token_index];
-        if (token.namespaces.size() >= (ns+1)) {
-            // FIXME why does this happen? ROOT token perhaps?
-            // cout << "skipped token\n";
-            return token.namespaces.at(ns);
-        }
-    }
-    
-    return _empty_attribute_vector;
-}
-
-
 std::pair<attribute_list_citerator, attribute_list_citerator>
 AttributeExtractor::extract2(const CParseState & state, const CSentence & sent) const
 {
@@ -173,72 +153,6 @@ AttributeExtractor::extract2(const CParseState & state, const CSentence & sent) 
 
 
 
-
-template<typename... args>
-void FeatureBuilder::add(FeatureName name, const args & ...  rest) {
-    if (!check_none_empty(rest...))
-        return;
-
-    // First call in the recursive add functions.
-    features.push_back(FeatureKey{name});
-    start_index = features.size() - 1;
-    value_count = 0;
-    // cout << "Call add feature. Currently " << features.size() << " added\n";
-    add_(name, rest...);
-}
-
-template<typename T, typename... args>
-bool FeatureBuilder::check_none_empty(const vector<T> & first, const args & ...rest) {
-    // cout << "Vector size " << first.size() << "\n";
-    if (first.size() == 0) return false;
-    return check_none_empty(rest...);
-}
-
-template<typename T, typename... args>
-bool FeatureBuilder::check_none_empty(const T & first, const args & ...rest) {
-    if (first == -1) return false;
-    return check_none_empty(rest...);
-}
-
-bool FeatureBuilder::check_none_empty() {
-    return true;
-}
-
-template<typename T, typename... args>
-void FeatureBuilder::add_(FeatureName name, const T & first, const args & ... rest) {
-    for (size_t i = start_index; i < features.size(); i++)
-        features[i].add_part(first, value_count);
-
-    value_count += sizeof(first);
-    add_(name, rest...);
-}
-
-
-template<typename... args>
-void FeatureBuilder::add_(FeatureName name, const std::vector<PosTag> &first, const args & ... rest) {
-    // auto x = FeatureKey::values.size();
-    assert(sizeof(first[0].tag) + value_count <= features[start_index].values.size());
-
-    for (size_t i = start_index; i < features.size(); i++) {
-        for (int j = 1; j < first.size(); j++) {
-            features.push_back(features[i]);
-            features.back().add_part(first[j].tag, value_count);
-            features.back().value *= first[j].weight;
-        }
-
-        features[i].add_part(first[0].tag, value_count);
-        features[i].value *= first[0].tag;
-    }
-
-    value_count += sizeof(first[0].tag);
-
-    add_(name, rest...);
-
-}
-
-void FeatureBuilder::add_(FeatureName name) {
-
-}
 
 template <typename T>
 void FeatureKey::add_part(T part, size_t start_index) {

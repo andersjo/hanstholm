@@ -1,6 +1,5 @@
 #include <iostream>
 #include "learn.h"
-#include "parse.h"
 #include "input.h"
 
 using namespace std;
