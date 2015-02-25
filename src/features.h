@@ -17,7 +17,7 @@ struct AttributeExtractor {
     std::string name;
     state_location::LocationName location;
     namespace_t ns;
-    std::pair<attribute_list_citerator, attribute_list_citerator> extract2(const CParseState & state, const CSentence & sent) const;
+    std::pair<attribute_list_citerator, attribute_list_citerator> extract2(const ParseState & state, const Sentence & sent) const;
     std::vector<Attribute> _empty_attribute_vector {};
 
 
@@ -67,7 +67,7 @@ namespace std {
 class FeatureBuilder2 {
 public:
     std::vector<combined_feature_t> feature_set;
-    void build(CParseState &, CSentence &, std::vector<FeatureKey> &);
+    void build(ParseState &, Sentence &, std::vector<FeatureKey> &);
     FeatureBuilder2(std::vector<combined_feature_t>);
 };
 

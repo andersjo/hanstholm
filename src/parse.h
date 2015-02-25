@@ -20,19 +20,19 @@ using token_index_t = int;
 using weight_t = float;
 
 using pos_feature_t = signed char;
-using relation_feature_t = short;
+using label_type_t = short;
 using feature_type_t = signed char;
 using lexical_feature_t = int;
 using attribute_t = int;
 using namespace_t = uint8_t;
 
 /**
- * Maps words, part-of-speech tags, and relations to integers.
+ * Maps words, part-of-speech tags, and labels to integers.
  */
 class CorpusDictionary {
 public:
-    std::unordered_map<std::string, relation_feature_t> relation_to_id;
-    relation_feature_t map_relation(std::string);
+    std::unordered_map<std::string, label_type_t> label_to_id;
+    label_type_t map_label(std::string);
     
     std::unordered_map<std::string, namespace_t> attribute_to_id;
     attribute_t map_attribute(std::string);
@@ -42,7 +42,6 @@ private:
     template <typename T>
     T map_any(std::unordered_map<std::string, T> &, std::string);
 };
-
 
 struct Attribute {
     size_t index;
@@ -58,26 +57,26 @@ constexpr size_t last_printable_char = 126;
 constexpr size_t num_printable_chars = last_printable_char - first_printable_char + 1;
 
 using attribute_vector = std::vector<Attribute>;
-struct CToken {
+struct Token {
     std::string id;
     std::vector<Attribute> attributes {};
-    relation_feature_t relation = -1;
+    label_type_t label;
     token_index_t index;
     token_index_t head;
 };
 
 
-struct CSentence {
-	std::vector <CToken> tokens;
+struct Sentence {
+	std::vector <Token> tokens;
 	bool has_edge(token_index_t, token_index_t) const;
     unsigned int unlabeled_score(std::vector<token_index_t>);
 };
 
 struct ParseResult {
     std::vector<token_index_t> heads;
-    std::vector<relation_feature_t> relations;
+    std::vector<label_type_t> labels;
     ParseResult() = delete;
-    ParseResult(size_t num_tokens) : heads(num_tokens, -1), relations(num_tokens, -1) {};
+    ParseResult(size_t num_tokens) : heads(num_tokens, -1), labels(num_tokens, -1) {};
 };
 
 namespace state_location {
@@ -100,24 +99,24 @@ namespace state_location {
 using state_location_t = std::array<token_index_t, state_location::LocationName::COUNT>;
 
 
-struct CParseState {
+struct ParseState {
 	size_t length;
 	std::vector<token_index_t> stack;
     token_index_t n0;
 	std::vector<token_index_t> heads;
-    std::vector<relation_feature_t> labels;
-    CParseState(size_t length);
-	void add_edge(token_index_t head, token_index_t dep, relation_feature_t label);
+    std::vector<label_type_t> labels;
+    ParseState(size_t length);
+	void add_edge(token_index_t head, token_index_t dep, label_type_t label);
     
     const state_location_t locations() const;
     
     int find_left_dep(token_index_t middle, token_index_t start) const;
     int find_right_dep(token_index_t middle, token_index_t end) const;
 
-    bool has_head_in_buffer(token_index_t, const CSentence &) const;
-    bool has_head_in_stack(token_index_t, const CSentence &) const;
-    bool has_dep_in_buffer(token_index_t, const CSentence &) const;
-    bool has_dep_in_stack(token_index_t, const CSentence &) const;
+    bool has_head_in_buffer(token_index_t, const Sentence &) const;
+    bool has_head_in_stack(token_index_t, const Sentence &) const;
+    bool has_dep_in_buffer(token_index_t, const Sentence &) const;
+    bool has_dep_in_stack(token_index_t, const Sentence &) const;
 
     // items_remaining() is deprecated in favor of is_terminal()
     bool items_remaining();
@@ -133,9 +132,9 @@ enum class Move {
 
 struct LabeledMove {
     Move move;
-    relation_feature_t label;
+    label_type_t label;
     size_t index {};
-    LabeledMove(Move move, relation_feature_t label) : move(move), label(label) {};
+    LabeledMove(Move move, label_type_t label) : move(move), label(label) {};
     LabeledMove() = delete;
     bool operator ==(const LabeledMove &other) const {
         return (move == other.move) && (label == other.label);
@@ -148,7 +147,7 @@ struct LabeledMove {
 
 class LabeledMoveSet {
 public:
-    relation_feature_t label = -1;
+    label_type_t label = -1;
     
     void set(LabeledMove lmove, bool value=true) {
         moves.set(static_cast<size_t>(lmove.move), value);
@@ -187,11 +186,11 @@ public:
     }
 };
 
-void perform_move(LabeledMove move, CParseState &state, std::vector<CToken> &tokens);
+void perform_move(LabeledMove move, ParseState &state, std::vector<Token> &tokens);
 
 struct ArcEager {
-    using ParseState = CParseState;
-    static LabeledMoveSet oracle(const CParseState & state, const CSentence & sent);
+    using ParseState = ParseState;
+    static LabeledMoveSet oracle(const ParseState & state, const Sentence & sent);
     static std::vector<LabeledMove> moves(size_t num_labels);
 };
 

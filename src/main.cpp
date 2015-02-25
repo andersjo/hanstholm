@@ -14,7 +14,7 @@ using namespace std;
 
         auto first_sent = sents[0];
         for (auto token : first_sent.tokens) {
-            cout << "Token (" << token.id << ") " << token.index << " with head " << token.head << " and rel " << token.relation << "\n";
+            cout << "Token (" << token.id << ") " << token.index << " with head " << token.head << " and rel " << token.label << "\n";
             cout << " got " << token.attributes.size() << " features\n";
         }
         auto parser = TransitionParser<ArcEager>(dict, nivre_feature_set(), 5);
@@ -27,7 +27,7 @@ using namespace std;
         auto sents = reader.read();
 
         cout << "Read " << sents.size() << " sentences ";
-        int num_tokens = std::accumulate(sents.cbegin(), sents.cend(), 0, [](int sum, CSentence sent) { return sum + sent.tokens.size(); });
+        int num_tokens = std::accumulate(sents.cbegin(), sents.cend(), 0, [](int sum, Sentence sent) { return sum + sent.tokens.size(); });
         cout << "with " << num_tokens << " tokens ";
          */
 

@@ -10,7 +10,7 @@ using namespace std;
 
 FeatureBuilder2::FeatureBuilder2(std::vector<combined_feature_t> feature_set) : feature_set(feature_set) { }
 
-void FeatureBuilder2::build(CParseState & state, CSentence & sent, std::vector<FeatureKey> & features) {
+void FeatureBuilder2::build(ParseState & state, Sentence & sent, std::vector<FeatureKey> & features) {
     size_t combined_feature_num = 0;
     for (auto & combined_feature : feature_set) {
         features.push_back(FeatureKey(combined_feature_num));
@@ -119,7 +119,7 @@ AttributeExtractor::AttributeExtractor(string name, namespace_t ns, state_locati
 }
 
 std::pair<attribute_list_citerator, attribute_list_citerator>
-AttributeExtractor::extract2(const CParseState & state, const CSentence & sent) const
+AttributeExtractor::extract2(const ParseState & state, const Sentence & sent) const
 {
     
     auto loc = state.locations();

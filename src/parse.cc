@@ -1,6 +1,7 @@
 #include "features.h"
 
 #include <fstream>
+#include <Python/Python.h>
 #include <sstream> // stringstream
 
 
@@ -23,11 +24,11 @@ std::ostream& operator <<(std::ostream& os, const MoveSet& s) {
 };
 
 
-bool CSentence::has_edge(token_index_t i, token_index_t j) const {
+bool Sentence::has_edge(token_index_t i, token_index_t j) const {
 	return tokens[i].head == j || tokens[j].head == i;
 }
 
-unsigned int CSentence::unlabeled_score(vector<token_index_t> pred_heads) {
+unsigned int Sentence::unlabeled_score(vector<token_index_t> pred_heads) {
     assert(pred_heads.size() == tokens.size());
     unsigned int uas = 0;
     for (int i = 0; i < tokens.size(); i++) {
@@ -37,34 +38,34 @@ unsigned int CSentence::unlabeled_score(vector<token_index_t> pred_heads) {
     return uas;
 }
 
-CParseState::CParseState(size_t length) : length(length) {
+ParseState::ParseState(size_t length) : length(length) {
     assert(length >= 2);
     assert(length < 1000);
 	stack.reserve(length);
 	stack.push_back(0);
 	n0 = 1;
     heads = vector<token_index_t>(length, -1 );
-    labels = vector<relation_feature_t>(length, -1);
+    labels = vector<label_type_t>(length, -1);
 
 }
 
-void CParseState::add_edge(token_index_t head, token_index_t dep, relation_feature_t label) {
-
+void ParseState::add_edge(token_index_t head, token_index_t dep, label_type_t label) {
     heads[dep] = head;
+    labels[dep] = label;
     // cout << "Add edge: H=" << head << " D= " << dep << endl;
 }
 
-bool CParseState::items_remaining() {
+bool ParseState::items_remaining() {
 	// Maybe better to check for n0->head == -1
 	return stack.size() > 0 || (n0 + 1) < length;
 }
 
-bool CParseState::is_terminal() {
+bool ParseState::is_terminal() {
     return !items_remaining();
 }
 
 
-LabeledMoveSet allowed_labeled_moves(const CParseState & state) {
+LabeledMoveSet allowed_labeled_moves(const ParseState & state) {
     LabeledMoveSet moves {};
     auto & stack = state.stack;
     
@@ -95,7 +96,7 @@ LabeledMoveSet allowed_labeled_moves(const CParseState & state) {
 }
 
 // Zero cost moves from current state in Arc Eager parsing
-LabeledMoveSet ArcEager::oracle(const CParseState & state, const CSentence & sent) {
+LabeledMoveSet ArcEager::oracle(const ParseState & state, const Sentence & sent) {
     auto & stack = state.stack;
     auto & tokens = sent.tokens;
     auto n0 = state.n0;
@@ -156,10 +157,10 @@ LabeledMoveSet ArcEager::oracle(const CParseState & state, const CSentence & sen
     // Add labels if LEFT_ARC or RIGHT_ARC are among the possibilities
     if (moves.test(Move::LEFT_ARC)) {
         // Arc (b, s)
-        moves.label = tokens[s0].relation;
+        moves.label = tokens[s0].label;
     } else if (moves.test(Move::RIGHT_ARC)) {
         // Arc (s, b)
-        moves.label = tokens[n0].relation;
+        moves.label = tokens[n0].label;
     }
     
     return moves;
@@ -187,7 +188,7 @@ vector<LabeledMove> ArcEager::moves(size_t num_labels) {
 }
 
 
-void perform_move(LabeledMove lmove, CParseState &state, vector<CToken> &tokens) {
+void perform_move(LabeledMove lmove, ParseState &state, vector<Token> &tokens) {
     auto & stack = state.stack;
     switch (lmove.move) {
         case Move::SHIFT:
@@ -212,21 +213,21 @@ void perform_move(LabeledMove lmove, CParseState &state, vector<CToken> &tokens)
 }
 
 
-int CParseState::find_left_dep(int middle, int start) const {
+int ParseState::find_left_dep(int middle, int start) const {
     for (int i = start; i < middle; i++) {
         if (heads[i] == middle) return i;
     }
     return -1;
 }
 
-int CParseState::find_right_dep(int middle, int last) const {
+int ParseState::find_right_dep(int middle, int last) const {
     for (int i = last; i > middle; i--) {
         if (heads[i] == middle) return i;
     }
     return -1;
 }
 
-const state_location_t CParseState::locations() const {
+const state_location_t ParseState::locations() const {
     auto loc = state_location_t();
     using namespace state_location;
     loc.fill(-1);
@@ -258,11 +259,11 @@ const state_location_t CParseState::locations() const {
     return loc;
 }
 
-bool CParseState::has_head_in_buffer(token_index_t index, CSentence const & sent) const {
+bool ParseState::has_head_in_buffer(token_index_t index, Sentence const & sent) const {
     return sent.tokens[index].head >= n0;
 }
 
-bool CParseState::has_head_in_stack(token_index_t index, CSentence const & sent) const {
+bool ParseState::has_head_in_stack(token_index_t index, Sentence const & sent) const {
     for (auto i : stack) {
         if (sent.tokens[index].head == i)
             return true;
@@ -270,7 +271,7 @@ bool CParseState::has_head_in_stack(token_index_t index, CSentence const & sent)
     return false;
 }
 
-bool CParseState::has_dep_in_buffer(token_index_t index, CSentence const & sent) const {
+bool ParseState::has_dep_in_buffer(token_index_t index, Sentence const & sent) const {
     for (int i = n0; i < length; i++) {
         if (sent.tokens[i].head == index)
             return true;
@@ -278,7 +279,7 @@ bool CParseState::has_dep_in_buffer(token_index_t index, CSentence const & sent)
     return false;
 }
 
-bool CParseState::has_dep_in_stack(token_index_t index, CSentence const & sent) const {
+bool ParseState::has_dep_in_stack(token_index_t index, Sentence const & sent) const {
     for (auto i : stack) {
         if (sent.tokens[i].head == index)
             return true;
@@ -286,8 +287,8 @@ bool CParseState::has_dep_in_stack(token_index_t index, CSentence const & sent) 
     return false;
 }
 
-relation_feature_t CorpusDictionary::map_relation(string relation) {
-    return map_any(relation_to_id, relation);
+label_type_t CorpusDictionary::map_label(string label) {
+    return map_any(label_to_id, label);
 }
 
 attribute_t CorpusDictionary::map_attribute(string attribute) {

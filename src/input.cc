@@ -27,7 +27,7 @@ VwSentenceReader::VwSentenceReader(string filename, CorpusDictionary & dictionar
 void VwSentenceReader::parse_instance(string::const_iterator instance_begin, string::const_iterator instance_end) {
     auto first_bar_pos = find(instance_begin, instance_end, '|');
     if (first_bar_pos != instance_end) {
-        token = CToken();
+        token = Token();
         parse_header(instance_begin, first_bar_pos);
         parse_body(first_bar_pos, instance_end);
         sent.tokens.push_back(token);
@@ -46,7 +46,7 @@ void VwSentenceReader::parse_header(string::const_iterator header_begin, string:
     
     if (match) {
         token.head = stoi(header_match[1].str());
-        token.relation = dictionary.map_relation(header_match[2].str());
+        token.label = dictionary.map_label(header_match[2].str());
         token.id = header_match[3].str();
     } else {
         error_pos = &header_begin;
@@ -104,7 +104,7 @@ void VwSentenceReader::parse_body(string::const_iterator body_begin, string::con
 
 
 
-vector<CSentence> VwSentenceReader::read() {
+vector<Sentence> VwSentenceReader::read() {
     std::ifstream infile(filename);
     corpus.clear();
     line_no = 1;
@@ -132,7 +132,7 @@ void VwSentenceReader::finish_sentence() {
     auto & root_token = sent.tokens.back();
     root_token.id = "root";
     root_token.head = -2;
-    root_token.relation = dictionary.map_relation("root");
+    root_token.label = dictionary.map_label("root");
     
     // Set the token index
     for (int i = 0; i < sent.tokens.size(); i++)
@@ -148,5 +148,5 @@ void VwSentenceReader::finish_sentence() {
 
     // Add finished sentence to corpus
     corpus.push_back(sent);
-    sent = CSentence();
+    sent = Sentence();
 }

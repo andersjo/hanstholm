@@ -36,18 +36,18 @@ public:
     TransitionParser(CorpusDictionary& dict, std::vector<combined_feature_t> feature_set, size_t num_rounds = 5)
     : feature_builder(feature_set), corpus_dictionary(dict), num_rounds(num_rounds)
     {
-        labeled_move_list = Strategy::moves(corpus_dictionary.relation_to_id.size());
+        labeled_move_list = Strategy::moves(corpus_dictionary.label_to_id.size());
         num_labeled_moves = labeled_move_list.size();
         weights = WeightMap(num_labeled_moves);
         scores.resize(num_labeled_moves);
 
     }
-    void fit(std::vector<CSentence> & sentences);
-    // ParseResult parse(CSentence &);
+    void fit(std::vector<Sentence> & sentences);
+    // ParseResult parse(Sentence &);
 private:
     void score_moves(std::vector<FeatureKey> &features);
     LabeledMove predict_move();
-    LabeledMove compute_gold_move(CSentence & sent, CParseState & state);
+    LabeledMove compute_gold_move(Sentence & sent, ParseState & state);
     
     // Reference or copy?
     CorpusDictionary & corpus_dictionary;
@@ -61,14 +61,14 @@ private:
 
 
 template <typename Strategy>
-void TransitionParser<Strategy>::fit(std::vector<CSentence> & sentences)
+void TransitionParser<Strategy>::fit(std::vector<Sentence> & sentences)
 {
     std::vector<FeatureKey> features;
     std::vector<bool> decisions;
 
     for (int round_i = 0; round_i < num_rounds; round_i++) {
         for (auto sent : sentences) {
-            auto state = CParseState(sent.tokens.size());
+            auto state = ParseState(sent.tokens.size());
             
             while (!state.is_terminal()) {
                 // Get the best next move according to current parameters.
@@ -133,7 +133,7 @@ LabeledMove TransitionParser<Strategy>::predict_move() {
 }
 
 template <typename Strategy>
-LabeledMove TransitionParser<Strategy>::compute_gold_move(CSentence & sent, CParseState & state) {
+LabeledMove TransitionParser<Strategy>::compute_gold_move(Sentence & sent, ParseState & state) {
     // Get zero cost moves.
     LabeledMoveSet zero_cost_labeled_moves = Strategy::oracle(state, sent);
     

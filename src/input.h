@@ -16,7 +16,7 @@ class VwSentenceReader {
 public:
     VwSentenceReader(std::string filename, CorpusDictionary & dictionary);
     VwSentenceReader() = delete;
-    std::vector<CSentence> read();
+    std::vector<Sentence> read();
 private:
     void parse_instance(std::string::const_iterator, std::string::const_iterator);
     void parse_header(std::string::const_iterator, std::string::const_iterator);
@@ -26,10 +26,10 @@ private:
     std::string::const_iterator * error_pos;
     CorpusDictionary & dictionary;
     std::string filename;
-    std::vector<CSentence> corpus;
+    std::vector<Sentence> corpus;
     size_t line_no;
-    CSentence sent {};
-    CToken token {};
+    Sentence sent {};
+    Token token {};
     
     std::regex ws_re{"\\s+", std::regex::optimize};
 
