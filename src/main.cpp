@@ -1,14 +1,16 @@
 #include <iostream>
 #include "learn.h"
 #include "input.h"
+#include "output.h"
 #include <algorithm>
 #include "hashtable_block.h"
+
 
 using namespace std;
 
 void train_test_parser() {
     // Read corpus
-    string train_filename = "/users/anders/data/treebanks/udt_1/rungsted/en-universal-train.conll";
+    string train_filename = "/users/anders/data/treebanks/udt_1/rungsted/en-universal-small.conll";
     string test_filename = "/users/anders/data/treebanks/udt_1/rungsted/en-universal-small.conll";
 //    string filename = "/users/anders/data/treebanks/udt_1/rungsted/en-universal-small.conll";
     auto dict = CorpusDictionary {};
@@ -16,32 +18,20 @@ void train_test_parser() {
     auto test_sents  = VwSentenceReader(test_filename, dict).read();
     cout << "Sentences loaded\n";
 
-
-/*
-        for (auto token : first_sent.tokens) {
-            cout << "Token (" << token.id << ") " << token.index << " with head " << token.head << " and rel " << token.label << "\n";
-            cout << " got " << token.attributes.size() << " features\n";
-        }
-        */
-    auto parser = TransitionParser<ArcEager>(dict, nivre_feature_set(), 5);
+    auto feature_set = nivre_feature_set();
+    auto parser = TransitionParser<ArcEager>(dict, feature_set, 5);
     parser.fit(train_sents);
 
+    ParseResult parsed_sentence;
+
+    for (const auto & sent : test_sents) {
+        cout << "Parsing test sentence\n";
+        parsed_sentence = parser.parse(sent);
+        output_parse_result(cout, sent, parsed_sentence);
+    }
 
 
 
-
-
-    /*
-    string filename = "/users/anders/data/treebanks/udt_1/rungsted/en-universal-dev.conll";
-    auto dict = CorpusDictionary {};
-    // auto sents = read_sentences(filename, dict);
-    auto reader = VwSentenceReader(filename, dict);
-    auto sents = reader.read();
-
-    cout << "Read " << sents.size() << " sentences ";
-    int num_tokens = std::accumulate(sents.cbegin(), sents.cend(), 0, [](int sum, Sentence sent) { return sum + sent.tokens.size(); });
-    cout << "with " << num_tokens << " tokens ";
-     */
 
 }
 
