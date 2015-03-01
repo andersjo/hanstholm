@@ -1,4 +1,5 @@
 #include "hashtable.h"
+#include "hashtable_block.h"
 #include <assert.h>
 #include <memory.h>
 
@@ -41,7 +42,7 @@ HashTable<Cell>::~HashTable()
 }
 
 //----------------------------------------------
-//  HashTable::Lookup
+//  HashTable::lookup
 //----------------------------------------------
 template <typename Cell>
 Cell* HashTable<Cell>::Lookup(size_t key)
@@ -67,7 +68,7 @@ Cell* HashTable<Cell>::Lookup(size_t key)
 };
 
 //----------------------------------------------
-//  HashTable::Insert
+//  HashTable::insert
 //----------------------------------------------
 template <typename Cell>
 Cell* HashTable<Cell>::Insert(size_t key)
@@ -83,7 +84,7 @@ Cell* HashTable<Cell>::Insert(size_t key)
                     return cell;        // Found
                 if (cell->key == 0)
                 {
-                    // Insert here
+                    // insert here
                     if ((m_population + 1) * 4 >= m_arraySize * 3)
                     {
                         // Time to resize
@@ -102,7 +103,7 @@ Cell* HashTable<Cell>::Insert(size_t key)
         // Check zero cell
         if (!m_zeroUsed)
         {
-            // Insert here
+            // insert here
             m_zeroUsed = true;
             if (++m_population * 4 >= m_arraySize * 3)
 			{
@@ -207,12 +208,12 @@ void HashTable<Cell>::Repopulate(size_t desiredSize)
     {
         if (c->key)
         {
-            // Insert this element into new array
+            // insert this element into new array
             for (Cell* cell = FIRST_CELL(integerHash(c->key));; cell = CIRCULAR_NEXT(cell))
             {
                 if (!cell->key)
                 {
-                    // Insert here
+                    // insert here
                     *cell = *c;
                     break;
                 }
