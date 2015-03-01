@@ -188,7 +188,7 @@ vector<LabeledMove> ArcEager::moves(size_t num_labels) {
 }
 
 
-void perform_move(LabeledMove lmove, ParseState &state, vector<Token> &tokens) {
+void perform_move(LabeledMove lmove, ParseState &state, const vector<Token> &tokens) {
     auto & stack = state.stack;
     switch (lmove.move) {
         case Move::SHIFT:

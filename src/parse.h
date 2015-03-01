@@ -75,7 +75,8 @@ struct Sentence {
 struct ParseResult {
     std::vector<token_index_t> heads;
     std::vector<label_type_t> labels;
-    ParseResult() = delete;
+    // ParseResult() = delete;
+    ParseResult() = default;
     // Too much copying? Are arguments copied for passing into the constructor?
     ParseResult(std::vector<token_index_t> heads, std::vector<label_type_t> labels) : heads(heads), labels(labels) {
         assert(heads.size() == labels.size());
@@ -192,7 +193,7 @@ public:
     }
 };
 
-void perform_move(LabeledMove move, ParseState &state, std::vector<Token> &tokens);
+void perform_move(LabeledMove move, ParseState &state, const std::vector<Token> &tokens);
 
 struct ArcEager {
     using ParseState = ParseState;

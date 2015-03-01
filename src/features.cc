@@ -5,7 +5,7 @@ using namespace std;
 
 FeatureBuilder2::FeatureBuilder2(std::vector<combined_feature_t> feature_set) : feature_set(feature_set) { }
 
-void FeatureBuilder2::build(ParseState & state, Sentence & sent, std::vector<FeatureKey> & features) {
+void FeatureBuilder2::build(ParseState & state, const Sentence & sent, std::vector<FeatureKey> & features) {
     size_t combined_feature_num = 0;
     for (auto & combined_feature : feature_set) {
         features.push_back(FeatureKey(combined_feature_num));
@@ -108,7 +108,7 @@ vector<combined_feature_t> nivre_feature_set() {
 
 
 AttributeExtractor::AttributeExtractor(string name, namespace_t ns, state_location::LocationName location)
-    : name(name), ns(ns), location(location)
+    : name(name), location(location), ns(ns)
 {
     
 }
@@ -212,8 +212,8 @@ WeightSection & WeightMap::get(FeatureKey key) {
 }
 */
 
-WeightMap::WeightMap(size_t section_size)
-        : section_size(section_size), table_block(262144, section_size*2) {
+WeightMap::WeightMap(size_t section_size_)
+        : table_block(262144, section_size_*2), section_size(section_size_)  {
 
 }
 

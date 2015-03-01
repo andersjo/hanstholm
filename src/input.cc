@@ -19,7 +19,7 @@
 
 using namespace std;
 
-VwSentenceReader::VwSentenceReader(string filename, CorpusDictionary & dictionary) : filename(filename), dictionary(dictionary) {
+VwSentenceReader::VwSentenceReader(string filename, CorpusDictionary & dictionary) : dictionary(dictionary), filename(filename)  {
     
 }
 

@@ -73,7 +73,7 @@ namespace std {
 class FeatureBuilder2 {
 public:
     std::vector<combined_feature_t> feature_set;
-    void build(ParseState &, Sentence &, std::vector<FeatureKey> &);
+    void build(ParseState &, const Sentence &, std::vector<FeatureKey> &);
     FeatureBuilder2(std::vector<combined_feature_t>);
 };
 

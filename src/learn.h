@@ -34,7 +34,7 @@ class TransitionParser {
 public:
     TransitionParser() = default;
     TransitionParser(CorpusDictionary& dict, std::vector<combined_feature_t> feature_set, size_t num_rounds = 5)
-    : feature_builder(feature_set), corpus_dictionary(dict), num_rounds(num_rounds)
+    : corpus_dictionary(dict), num_rounds(num_rounds), feature_builder(feature_set)
     {
         labeled_move_list = Strategy::moves(corpus_dictionary.label_to_id.size());
         num_labeled_moves = labeled_move_list.size();
@@ -43,7 +43,7 @@ public:
 
     }
     void fit(std::vector<Sentence> & sentences);
-    ParseResult parse(Sentence &);
+    ParseResult parse(const Sentence &);
 private:
     void score_moves(std::vector<FeatureKey> &features);
     LabeledMove predict_move();
@@ -118,7 +118,7 @@ void TransitionParser<Strategy>::fit(std::vector<Sentence> & sentences)
 
 
 template <typename Strategy>
-ParseResult TransitionParser<Strategy>::parse(Sentence & sent)
+ParseResult TransitionParser<Strategy>::parse(const Sentence & sent)
 {
 
     std::vector<FeatureKey> features;
@@ -178,7 +178,5 @@ LabeledMove TransitionParser<Strategy>::compute_gold_move(Sentence & sent, Parse
     assert(gold_move_ptr != nullptr);
     return *gold_move_ptr;
 }
-
-
 
 #endif
