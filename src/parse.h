@@ -76,7 +76,10 @@ struct ParseResult {
     std::vector<token_index_t> heads;
     std::vector<label_type_t> labels;
     ParseResult() = delete;
-    ParseResult(size_t num_tokens) : heads(num_tokens, -1), labels(num_tokens, -1) {};
+    // Too much copying? Are arguments copied for passing into the constructor?
+    ParseResult(std::vector<token_index_t> heads, std::vector<label_type_t> labels) : heads(heads), labels(labels) {
+        assert(heads.size() == labels.size());
+    };
 };
 
 namespace state_location {
@@ -105,10 +108,13 @@ struct ParseState {
     token_index_t n0;
 	std::vector<token_index_t> heads;
     std::vector<label_type_t> labels;
+    state_location_t locations_ {};
+
     ParseState(size_t length);
 	void add_edge(token_index_t head, token_index_t dep, label_type_t label);
     
     const state_location_t locations() const;
+    void update_locations();
     
     int find_left_dep(token_index_t middle, token_index_t start) const;
     int find_right_dep(token_index_t middle, token_index_t end) const;
@@ -135,7 +141,7 @@ struct LabeledMove {
     label_type_t label;
     size_t index {};
     LabeledMove(Move move, label_type_t label) : move(move), label(label) {};
-    LabeledMove() = delete;
+    // LabeledMove() = delete;
     bool operator ==(const LabeledMove &other) const {
         return (move == other.move) && (label == other.label);
     }

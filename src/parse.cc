@@ -46,7 +46,7 @@ ParseState::ParseState(size_t length) : length(length) {
 	n0 = 1;
     heads = vector<token_index_t>(length, -1 );
     labels = vector<label_type_t>(length, -1);
-
+    update_locations();
 }
 
 void ParseState::add_edge(token_index_t head, token_index_t dep, label_type_t label) {
@@ -210,6 +210,7 @@ void perform_move(LabeledMove lmove, ParseState &state, vector<Token> &tokens) {
         default:
             throw std::runtime_error("Invalid move");
     }
+    state.update_locations();
 }
 
 
@@ -258,6 +259,37 @@ const state_location_t ParseState::locations() const {
     
     return loc;
 }
+
+void ParseState::update_locations() {
+    using namespace state_location;
+
+    locations_.fill(-1);
+
+    if (stack.size() >= 1) {
+        locations_[S0] = stack.back();
+        // auto max_head = max_element(heads.begin(), heads.end());
+        // cout << *max_head << endl;
+        locations_[S0_head] = heads[locations_[S0]];
+        locations_[S0_left] = find_left_dep(locations_[S0], 0);
+        if (locations_[S0_left] != -1)
+            locations_[S0_left2] = find_left_dep(locations_[S0], locations_[S0_left] + 1);
+
+        locations_[S0_right] = find_right_dep(locations_[S0], static_cast<int>(length - 1));
+        if (locations_[S0_right] != -1)
+            locations_[S0_right2] = find_right_dep(locations_[S0], locations_[S0_right] - 1);
+    }
+
+    locations_[N0] = n0;
+    locations_[N0_left] = find_left_dep(locations_[N0], 0);
+    if (locations_[N0_left] != -1)
+        locations_[N0_left2] = find_left_dep(locations_[N0], locations_[N0_left] + 1);
+
+    if (locations_[N0] < (length - 1))
+        locations_[N1] = locations_[N0] + 1;
+    if (locations_[N0] < (length - 2))
+        locations_[N2] = locations_[N0] + 2;
+}
+
 
 bool ParseState::has_head_in_buffer(token_index_t index, Sentence const & sent) const {
     return sent.tokens[index].head >= n0;
