@@ -21,7 +21,9 @@ private:
     void parse_instance(std::string::const_iterator, std::string::const_iterator);
     void parse_header(std::string::const_iterator, std::string::const_iterator);
     void parse_body(std::string::const_iterator, std::string::const_iterator);
+    void parse_body2(std::string::const_iterator, std::string::const_iterator);
     void finish_sentence();
+    weight_t get_number_or_default(std::string::const_iterator, std::string::const_iterator);
     
     std::string::const_iterator * error_pos;
     CorpusDictionary & dictionary;

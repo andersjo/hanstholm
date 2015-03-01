@@ -54,7 +54,7 @@ void VwSentenceReader::parse_header(string::const_iterator header_begin, string:
     }
 }
 
-void VwSentenceReader::parse_body(string::const_iterator body_begin, string::const_iterator body_end) {
+void VwSentenceReader::parse_body2(string::const_iterator body_begin, string::const_iterator body_end) {
     // Feature section
     auto str_token_begin = sregex_token_iterator(body_begin, body_end, ws_re, -1);
     auto str_token_end = sregex_token_iterator();
@@ -102,6 +102,74 @@ void VwSentenceReader::parse_body(string::const_iterator body_begin, string::con
     }
 }
 
+void VwSentenceReader::parse_body(string::const_iterator body_begin, string::const_iterator body_end) {
+    // Feature section
+    char ns_prefix = '*';
+
+    // cout << "Got this string " << string(body_begin,)
+
+    auto start_of_token = body_begin;
+    for (auto str_pos = body_begin; str_pos < body_end; str_pos++) {
+        // Tokens are delimited by whitespace. The line is padded with an extra whitespace.
+        if (*str_pos == ' ') {
+            // Namespace
+            if (*start_of_token == '|') {
+                if (distance(start_of_token, str_pos) > 1) {
+                    ns_prefix = *(start_of_token + 1);
+                } else {
+                    // Default namespace
+                    ns_prefix = '*';
+                }
+            } else {
+                // Feature declaration
+                weight_t val = 1;
+                // Find the last colon in the string if any
+                // Features have optional numerical values, which are marked by a colon
+
+                auto colon_pos = str_pos;
+                // cout << "Colon pos before adjustment '" << &*colon_pos << "'\n";
+                for (; colon_pos > start_of_token && (*colon_pos != ':'); colon_pos--);
+
+                // cout << "Colon pos is '" << &*colon_pos << "' and start_of_token is '" << &*start_of_token << "'\n";
+
+                if (colon_pos != start_of_token) {
+                    val = get_number_or_default(str_pos, colon_pos);
+                } else {
+                    colon_pos = str_pos;
+                }
+
+                // Declare this buffer at the top of the function or even in the class?
+                string feature {};
+                feature.push_back(ns_prefix);
+                feature.push_back('^');
+                feature.append(start_of_token, colon_pos);
+
+                // cout << "Got feature " << feature << " with val " << val << "\n";
+
+                auto attribute_id = dictionary.map_attribute(feature);
+                token.attributes.emplace_back(attribute_id, val, ns_prefix);
+            }
+
+            start_of_token = str_pos + 1;
+        }
+
+    }
+}
+
+weight_t VwSentenceReader::get_number_or_default(string::const_iterator str_pos, string::const_iterator colon_pos) {
+    // Interpret the remainder of the feature as a numeric value.
+    // We do this the C-way to avoid making temporary strings for std::stof.
+    // Premature optimization?
+    weight_t val;
+    char * last_char_converted = nullptr;
+    val = strtof(&(*colon_pos) + 1, &last_char_converted);
+    if (last_char_converted != (&(*str_pos)-1) || errno != 0) {
+        // Warn, or be silent?
+        cout << "Conversion failed. Falling back to default value (1.0): " << string(colon_pos + 1, str_pos) << "\n";
+        val = 1;
+    }
+    return val;
+}
 
 
 vector<Sentence> VwSentenceReader::read() {
@@ -114,6 +182,8 @@ vector<Sentence> VwSentenceReader::read() {
         if (line.size() == 0) {
             finish_sentence();
         } else {
+            // End line with a blank character
+            line.push_back(' ');
             parse_instance(line.cbegin(), line.cend());
         }
         line_no++;
@@ -150,3 +220,4 @@ void VwSentenceReader::finish_sentence() {
     corpus.push_back(sent);
     sent = Sentence();
 }
+
