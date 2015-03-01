@@ -140,11 +140,12 @@ void VwSentenceReader::parse_body(string::const_iterator body_begin, string::con
 
                 // Declare this buffer at the top of the function or even in the class?
                 string feature {};
+                assert(ns_prefix != '\0');
                 feature.push_back(ns_prefix);
                 feature.push_back('^');
                 feature.append(start_of_token, colon_pos);
 
-                // cout << "Got feature " << feature << " with val " << val << "\n";
+                // cout << "Got feature " << feature << " with val " << val << " and ns " << ns_prefix << "\n";
 
                 auto attribute_id = dictionary.map_attribute(feature);
                 token.attributes.emplace_back(attribute_id, val, ns_prefix);

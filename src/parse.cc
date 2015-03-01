@@ -55,45 +55,10 @@ void ParseState::add_edge(token_index_t head, token_index_t dep, label_type_t la
     // cout << "Add edge: H=" << head << " D= " << dep << endl;
 }
 
-bool ParseState::items_remaining() {
-	// Maybe better to check for n0->head == -1
-	return stack.size() > 0 || (n0 + 1) < length;
-}
-
 bool ParseState::is_terminal() {
-    return !items_remaining();
+    return (n0 == (length - 1)) && stack.empty();
 }
 
-
-LabeledMoveSet allowed_labeled_moves(const ParseState & state) {
-    LabeledMoveSet moves {};
-    auto & stack = state.stack;
-    
-    if (state.stack.size() == 0) {
-        moves.set(Move::SHIFT);
-        return moves;
-    } else {
-        // Allow everything initially, then remove
-        // invalid moves
-        moves.allow_all();
-        
-        // REDUCE throws S0 away,
-        // and is illegal if S0 has not been assigned a head.
-        if (state.heads[stack.back()] == -1)
-            moves.set(Move::REDUCE, false);
-        
-        // LEFT-ARC makes B0 the head of S0.
-        // It is an illegal move if S0 already has a head.
-        if (state.heads[stack.back()] != -1)
-            moves.set(Move::LEFT_ARC, false);
-        
-        // LEFT-ARC not possible if S0 is the ROOT token.
-        if (stack.back() == (state.length - 1))
-            moves.set(Move::LEFT_ARC, false);
-    }
-    
-    return moves;
-}
 
 // Zero cost moves from current state in Arc Eager parsing
 LabeledMoveSet ArcEager::oracle(const ParseState & state, const Sentence & sent) {
@@ -187,24 +152,67 @@ vector<LabeledMove> ArcEager::moves(size_t num_labels) {
     return labeled_moves;
 }
 
+LabeledMoveSet ArcEager::allowed_labeled_moves(const ParseState &state) {
+    // This method only gives valid answers when the current state is non-terminal.
+    // Specifically, it assumes that return value of `state.is_terminal` is false.
+    LabeledMoveSet moves {};
+    auto & stack = state.stack;
+
+    if (state.stack.size() == 0) {
+        moves.set(Move::SHIFT);
+        return moves;
+    } else {
+        // Allow everything initially, then remove
+        // invalid moves
+        moves.allow_all();
+
+        // SHIFT moves N0 to the stack and is not possible
+        // if N0 is set to the last token in the sentence
+        if (state.n0 == (state.length-1))
+            moves.set(Move::SHIFT, false);
+
+        // REDUCE throws S0 away,
+        // and is illegal if S0 has not been assigned a head.
+        if (state.heads[stack.back()] == -1)
+            moves.set(Move::REDUCE, false);
+
+        // LEFT-ARC makes B0 the head of S0.
+        // It is an illegal move if S0 already has a head.
+        if (state.heads[stack.back()] != -1)
+            moves.set(Move::LEFT_ARC, false);
+
+        // RIGHT-ARC not possible if S0 is the ROOT token.
+        if (stack.back() == (state.length - 1))
+            moves.set(Move::RIGHT_ARC, false);
+
+    }
+
+    return moves;
+}
+
+
 
 void perform_move(LabeledMove lmove, ParseState &state, const vector<Token> &tokens) {
     auto & stack = state.stack;
     switch (lmove.move) {
         case Move::SHIFT:
+            assert(state.n0 < tokens.size());
             stack.push_back(state.n0);
             state.n0++;
             break;
         case Move::RIGHT_ARC:
+            assert(!stack.empty() && state.n0 < tokens.size());
             state.add_edge(stack.back(), state.n0, lmove.label);
             stack.push_back(state.n0);
             state.n0++;
             break;
         case Move::LEFT_ARC:
+            assert(!stack.empty());
             state.add_edge(state.n0, stack.back(), lmove.label);
             stack.pop_back();
             break;
         case Move::REDUCE:
+            assert(!stack.empty());
             stack.pop_back();
             break;
         default:
@@ -228,37 +236,7 @@ int ParseState::find_right_dep(int middle, int last) const {
     return -1;
 }
 
-const state_location_t ParseState::locations() const {
-    auto loc = state_location_t();
-    using namespace state_location;
-    loc.fill(-1);
 
-    if (stack.size() >= 1) {
-        loc[S0] = stack.back();
-        // auto max_head = max_element(heads.begin(), heads.end());
-        // cout << *max_head << endl;
-        loc[S0_head] = heads[loc[S0]];
-        loc[S0_left] = find_left_dep(loc[S0], 0);
-        if (loc[S0_left] != -1)
-            loc[S0_left2] = find_left_dep(loc[S0], loc[S0_left] + 1);
-        
-        loc[S0_right] = find_right_dep(loc[S0], static_cast<int>(length - 1));
-        if (loc[S0_right] != -1)
-            loc[S0_right2] = find_right_dep(loc[S0], loc[S0_right] - 1);
-    }
-    
-    loc[N0] = n0;
-    loc[N0_left] = find_left_dep(loc[N0], 0);
-    if (loc[N0_left] != -1)
-        loc[N0_left2] = find_left_dep(loc[N0], loc[N0_left] + 1);
-    
-    if (loc[N0] < (length - 1))
-        loc[N1] = loc[N0] + 1;
-    if (loc[N0] < (length - 2))
-        loc[N2] = loc[N0] + 2;
-    
-    return loc;
-}
 
 void ParseState::update_locations() {
     using namespace state_location;

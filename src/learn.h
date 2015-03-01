@@ -103,6 +103,15 @@ void TransitionParser<Strategy>::fit(std::vector<Sentence> & sentences)
                     }
                 }
                 // Perform the gold move
+//                auto allowed_moves = Strategy::allowed_labeled_moves(state);
+//                if (allowed_moves.test(Move::RIGHT_ARC)) cout << "RIGHT_ARC ";
+//                if (allowed_moves.test(Move::LEFT_ARC)) cout << "LEFT_ARC ";
+//                if (allowed_moves.test(Move::SHIFT)) cout << "SHIFT ";
+//                if (allowed_moves.test(Move::REDUCE)) cout << "REDUCE ";
+//                cout << " allowed\n";
+
+
+
                 perform_move(gold_move, state, sent.tokens);
 
                 features.clear();
@@ -127,12 +136,24 @@ ParseResult TransitionParser<Strategy>::parse(const Sentence & sent)
     while (!state.is_terminal()) {
         feature_builder.build(state, sent, features);
         score_moves(features);
+        auto allowed_moves = Strategy::allowed_labeled_moves(state);
+
+        bool allowed_move_found = false;
         for (auto lmove: labeled_move_list) {
-            if (!Strategy::is_allowed_move(state, lmove))
+            // Convert labeled moves to unlabeled before testing
+            if (!allowed_moves.test(lmove.move)) {
                 scores[lmove.index] = -std::numeric_limits<weight_t >::infinity();
+            } else {
+                allowed_move_found = true;
+            }
         }
+        assert(allowed_move_found);
+
 
         LabeledMove pred_move = predict_move();
+        cout << "Predicted move " << static_cast<int>(pred_move.move) << "\n";
+        cout << "State N0 is" << state.n0 << "\n";
+        cout << "Stack size is " << state.stack.size() << "\n";
         perform_move(pred_move, state, sent.tokens);
 
         features.clear();

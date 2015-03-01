@@ -117,9 +117,17 @@ std::pair<attribute_list_citerator, attribute_list_citerator>
 AttributeExtractor::extract2(const ParseState & state, const Sentence & sent) const
 {
     
-    auto token_index = state.locations_[location];
-    
-    if (token_index != -1) {
+    int token_index = state.locations_[location];
+    if (token_index >= static_cast<int>(sent.tokens.size())) {
+        // cout << "Token index beyond sentence size. Location: " << location << " pointing to token index: " << token_index << endl;
+    }
+
+    // assert(token_index <= static_cast<int>(sent.tokens.size()));
+
+    // Token index should be inside the sentence.
+    // It may outside the sentence when the location is not defined (value = -1)
+    // or when N0 is pushed beyond the last token.
+    if (token_index >= 0 && token_index < sent.tokens.size()) {
         auto & token = sent.tokens[token_index];
 
         attribute_list_citerator it_begin = token.attributes.cbegin();
