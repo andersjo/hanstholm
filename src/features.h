@@ -9,6 +9,7 @@
 
 #include "parse.h"
 #include "hash.h"
+#include "hashtable.h"
 
 
 using attribute_list_citerator = std::vector<Attribute>::const_iterator;
@@ -31,8 +32,9 @@ using combined_feature_t = std::vector<AttributeExtractor>;
 std::vector<combined_feature_t> nivre_feature_set();
 
 struct FeatureKey {
-    short feature_template_index;
-    std::array<char, 16> values {};
+    size_t hashed_val = 0;
+    // short feature_template_index;
+    // std::array<char, 16> values {};
 
     template <typename T>
     void add_part(T, size_t);
@@ -42,15 +44,19 @@ struct FeatureKey {
     float value = 1.0;
     FeatureKey() {};
     FeatureKey(size_t feature_num)  {
-        feature_template_index = static_cast<short>(feature_num);
+        hashed_val = feature_num;
+        // feature_template_index = static_cast<short>(feature_num);
     };
 
+    /*
     bool operator==(const FeatureKey & other) const {
         return (values == other.values
                 && feature_template_index == other.feature_template_index);
     }
+    */
 };
 
+/*
 namespace std {
     template <> struct hash<FeatureKey>
     {
@@ -63,7 +69,7 @@ namespace std {
     };
 
 }
-
+*/
 class FeatureBuilder2 {
 public:
     std::vector<combined_feature_t> feature_set;
@@ -74,7 +80,31 @@ public:
 struct WeightSection {
     std::vector<weight_t> weights;
     std::vector<weight_t> cumulative;
+    WeightSection(size_t section_size) {
+        weights.resize(section_size);
+        cumulative.resize(section_size);
+    }
+
 };
+
+/*
+class WeightSection {
+    WeightSection(size_t aligned_section_size, float * base_ptr) {
+
+    }
+    float * base_ptr;
+
+};
+*/
+
+
+
+struct HashCell {
+    size_t key;
+    // Perhaps change to a pointer to alloced memory to avoid another layer of indirection
+    WeightSection * value;
+};
+
 
 class WeightMap {
 
@@ -82,9 +112,17 @@ public:
     WeightMap() {};
     WeightMap(size_t);
     WeightSection & get(FeatureKey);
-    std::unordered_map<FeatureKey, WeightSection> weights;
+    float *get_or_insert(FeatureKey);
+    // std::unordered_map<FeatureKey, WeightSection> weights;
+    // HashTable<HashCell> table { 262144 };
+    HashTableBlock table_block;
+    float * weights_begin(float * base) {
+        return base;
+    };
+
 private:
     size_t section_size;
+    // size_t aligned_section_size;
 };
 
 

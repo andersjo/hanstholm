@@ -3,11 +3,6 @@
 using namespace std;
 
 
-
-
-
-
-
 FeatureBuilder2::FeatureBuilder2(std::vector<combined_feature_t> feature_set) : feature_set(feature_set) { }
 
 void FeatureBuilder2::build(ParseState & state, Sentence & sent, std::vector<FeatureKey> & features) {
@@ -122,8 +117,7 @@ std::pair<attribute_list_citerator, attribute_list_citerator>
 AttributeExtractor::extract2(const ParseState & state, const Sentence & sent) const
 {
     
-    auto loc = state.locations();
-    auto token_index = loc.at(location);
+    auto token_index = state.locations_[location];
     
     if (token_index != -1) {
         auto & token = sent.tokens[token_index];
@@ -156,9 +150,11 @@ AttributeExtractor::extract2(const ParseState & state, const Sentence & sent) co
 
 template <typename T>
 void FeatureKey::add_part(T part, size_t start_index) {
+    hash_combine(hashed_val, part);
+    // hash_combine(<#(std::size_t&)seed#>, <#(T const &)v#>)
     // Assert, somehow, that the object is trivially copyable
     // cout << "Copying " << sizeof(part) << " at offset " << start_index << "\n";
-    memcpy(values.data() + start_index, &part, sizeof(part));
+    // memcpy(values.data() + start_index, &part, sizeof(part));
 
 }
 
@@ -168,6 +164,7 @@ void FeatureKey::add_part(T part, size_t start_index) {
 * This behaviour should be okay during test, because all weights are initialized to zero.
 *
 */
+/*
 WeightSection & WeightMap::get(FeatureKey key) {
     auto & section = weights[key];
     // Check if section is new
@@ -178,5 +175,45 @@ WeightSection & WeightMap::get(FeatureKey key) {
 
     return section;
 }
+*/
 
-WeightMap::WeightMap(size_t section_size) : section_size(section_size) { }
+float *WeightMap::get_or_insert(FeatureKey key) {
+    float * val_ptr = table_block.lookup(key.hashed_val);
+    if (val_ptr == nullptr)
+        return table_block.insert(key.hashed_val);
+    else
+        return val_ptr;
+}
+
+/*
+WeightSection & WeightMap::get(FeatureKey key) {
+    //std::hash<FeatureKey> hash_fn;
+    //size_t id_hash = hash_fn(key);
+
+
+    HashCell * cell_ptr = table.Lookup(key.hashed_val);
+    if (cell_ptr == nullptr) {
+        cell_ptr = table.Insert(key.hashed_val);
+        cell_ptr->value = new WeightSection(section_size);
+    }
+
+    // Safe to dereference this pointer?
+    assert(cell_ptr->value != nullptr);
+    return *cell_ptr->value;
+
+//    auto & section = weights[key];
+//    // Check if section is new
+//    if (section.weights.size() != section_size) {
+//        section.weights.resize(section_size);
+//        section.cumulative.resize(section_size);
+//    }
+//
+//    return section;
+}
+*/
+
+WeightMap::WeightMap(size_t section_size)
+        : section_size(section_size), table_block(262144, section_size*2) {
+
+}
+

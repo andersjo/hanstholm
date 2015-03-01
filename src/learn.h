@@ -43,7 +43,7 @@ public:
 
     }
     void fit(std::vector<Sentence> & sentences);
-    // ParseResult parse(Sentence &);
+    ParseResult parse(Sentence &);
 private:
     void score_moves(std::vector<FeatureKey> &features);
     LabeledMove predict_move();
@@ -64,65 +64,92 @@ template <typename Strategy>
 void TransitionParser<Strategy>::fit(std::vector<Sentence> & sentences)
 {
     std::vector<FeatureKey> features;
-    std::vector<bool> decisions;
 
     for (int round_i = 0; round_i < num_rounds; round_i++) {
+        int num_updates = 0;
+        int num_tokens_seen = 0;
+        cout << "Round " << round_i << " begun\n";
+        cout << "Here, " << (static_cast<double>(weights.table_block.num_keys_searched) / static_cast<double>(weights.table_block.num_lookups))  << " keys searched on avg.\n";
+        weights.table_block.num_keys_searched = 1;
+        weights.table_block.num_lookups = 1;
+
+
         for (auto sent : sentences) {
             auto state = ParseState(sent.tokens.size());
-            
+
             while (!state.is_terminal()) {
+                num_tokens_seen++;
                 // Get the best next move according to current parameters.
 
                 // Compute features for the current state,
                 // and score moves according to current model.
                 feature_builder.build(state, sent, features);
                 score_moves(features);
-                
+
                 // Predicted move is the argmax of scores
                 LabeledMove pred_move = predict_move();
                 // Gold move is the argmax of the zero-cost
                 LabeledMove gold_move = compute_gold_move(sent, state);
-                
+
                 // If predicted move and gold move are not identical,
                 // update the model with the difference between the
                 // feature representations of the two moves.
                 if (pred_move != gold_move) {
-                    decisions.push_back(false);
+                    num_updates++;
                     for (auto &feature : features) {
-                        auto &w_section = weights.get(feature);
-                        w_section.weights[pred_move.index] -= 1;
-                        w_section.weights[gold_move.index] += 1;
+                        float * w_section = weights.get_or_insert(feature);
+                        weights.weights_begin(w_section)[pred_move.index] -= 1;
+                        weights.weights_begin(w_section)[gold_move.index] += 1;
                     }
-                } else {
-                    decisions.push_back(true);
                 }
-                
                 // Perform the gold move
                 perform_move(gold_move, state, sent.tokens);
-                
-                if (decisions.size() % 100 == 0) {
-                    if (decisions.size() >= 100) {
-                        auto sum = std::accumulate(decisions.cend() - 100, decisions.cend(), 0);
-                        cout << sum << " correct\n";
-                        
-                    }
-                }
-                
+
                 features.clear();
-                
+
             }
         }
+
+        double correct_pct = 1.0 - (static_cast<double>(num_updates) / static_cast<double>(num_tokens_seen));
+        correct_pct *= 100;
+        cout << correct_pct << " % correct decisions in round\n";
     }
+}
+
+
+template <typename Strategy>
+ParseResult TransitionParser<Strategy>::parse(Sentence & sent)
+{
+
+    std::vector<FeatureKey> features;
+    auto state = ParseState(sent.tokens.size());
+
+    while (!state.is_terminal()) {
+        feature_builder.build(state, sent, features);
+        score_moves(features);
+        for (auto lmove: labeled_move_list) {
+            if (!Strategy::is_allowed_move(state, lmove))
+                scores[lmove.index] = -std::numeric_limits<weight_t >::infinity();
+        }
+
+        LabeledMove pred_move = predict_move();
+        perform_move(pred_move, state, sent.tokens);
+
+        features.clear();
+    }
+
+    return ParseResult(state.heads, state.labels);
 };
+
 
 template <typename Strategy>
 void TransitionParser<Strategy>::score_moves(std::vector<FeatureKey> &features) {
     std::fill(scores.begin(), scores.end(), 0);
-    
+
     for (FeatureKey & feature : features) {
-        auto &w_section = weights.get(feature);
+        float * w_section = weights.get_or_insert(feature);
         for (int move_id = 0; move_id < num_labeled_moves; move_id++) {
-            scores[move_id] += w_section.weights[move_id];
+            scores[move_id] += weights.weights_begin(w_section)[move_id];
         }
     }
 }
@@ -136,7 +163,7 @@ template <typename Strategy>
 LabeledMove TransitionParser<Strategy>::compute_gold_move(Sentence & sent, ParseState & state) {
     // Get zero cost moves.
     LabeledMoveSet zero_cost_labeled_moves = Strategy::oracle(state, sent);
-    
+
     // FIXME find lowest number possible
     weight_t best_score = -1E7;
     LabeledMove *gold_move_ptr = nullptr;
@@ -147,12 +174,10 @@ LabeledMove TransitionParser<Strategy>::compute_gold_move(Sentence & sent, Parse
             gold_move_ptr = &current;
         }
     }
-    
+
+    assert(gold_move_ptr != nullptr);
     return *gold_move_ptr;
-
 }
-
-
 
 
 
