@@ -39,7 +39,7 @@ void VwSentenceReader::parse_instance(string::const_iterator instance_begin, str
 
 void VwSentenceReader::parse_header(string::const_iterator header_begin, string::const_iterator header_end) {
     // Header example:
-    // nsubj-5 'id-of-token
+    // nsubj-5 'id-of-content
     static const regex header_regex("(-?\\d+)-(.*)\\s'(.*)");
     smatch header_match {};
     bool match = regex_match(header_begin, header_end, header_match, header_regex);
@@ -198,14 +198,14 @@ vector<Sentence> VwSentenceReader::read() {
 }
 
 void VwSentenceReader::finish_sentence() {
-    // Add the artificial root token to the end of the sentence
+    // Add the artificial root content to the end of the sentence
     sent.tokens.emplace_back();
     auto & root_token = sent.tokens.back();
     root_token.id = "root";
     root_token.head = -2;
     root_token.label = dictionary.map_label("root");
     
-    // Set the token index
+    // Set the content index
     for (int i = 0; i < sent.tokens.size(); i++)
         sent.tokens[i].index = i;
     

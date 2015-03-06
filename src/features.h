@@ -12,25 +12,6 @@
 #include "hashtable.h"
 
 
-using attribute_list_citerator = std::vector<Attribute>::const_iterator;
-// Atomic attribute
-struct AttributeExtractor {
-    std::string name;
-    state_location::LocationName location;
-    namespace_t ns;
-    std::pair<attribute_list_citerator, attribute_list_citerator> extract2(const ParseState & state, const Sentence & sent) const;
-    std::vector<Attribute> _empty_attribute_vector {};
-
-
-
-    AttributeExtractor(std::string, namespace_t ns, state_location::LocationName location);
-    
-};
-
-using combined_feature_t = std::vector<AttributeExtractor>;
-
-std::vector<combined_feature_t> nivre_feature_set();
-
 struct FeatureKey {
     size_t hashed_val = 0;
     // short feature_template_index;
@@ -38,6 +19,12 @@ struct FeatureKey {
 
     template <typename T>
     void add_part(T, size_t);
+
+    template <typename T>
+    void add_part(T);
+
+    void add_attribute(Attribute, float=1);
+
 
     // Conceptually the value is not part of the key,
     // but it is kept here for convenience.
@@ -55,6 +42,56 @@ struct FeatureKey {
     }
     */
 };
+
+using attribute_list_citerator = std::vector<Attribute>::const_iterator;
+// Atomic attribute
+
+struct ExtractorBase {
+    virtual void fill_features(const ParseState &state, const Sentence &sent, std::vector<FeatureKey> & features, size_t start_index) {};
+};
+
+class AttributeExtractor : public ExtractorBase {
+public:
+    std::string name;
+    state_location::LocationName location;
+    namespace_t ns;
+    std::pair<attribute_list_citerator, attribute_list_citerator> extract(const ParseState &state, const Sentence &sent) const;
+    std::vector<Attribute> _empty_attribute_vector {};
+
+    void fill_features(const ParseState &state, const Sentence &sent, std::vector<FeatureKey> & features, size_t start_index) override;
+
+    AttributeExtractor(std::string, namespace_t ns, state_location::LocationName location);
+};
+
+
+using combined_feature_t = std::vector<AttributeExtractor>;
+std::vector<combined_feature_t> nivre_feature_set();
+
+
+class ProductCombiner : public ExtractorBase {
+public:
+    ProductCombiner(ExtractorBase lhs_, ExtractorBase rhs_) : lhs(lhs_), rhs(rhs_) {};
+    void fill_features(const ParseState &state, const Sentence &sent, std::vector<FeatureKey> & features, size_t start_index) override;
+private:
+    ExtractorBase lhs;
+    ExtractorBase rhs;
+};
+
+
+class DotProductCombiner : public ExtractorBase {
+public:
+    DotProductCombiner(AttributeExtractor lhs, AttributeExtractor rhs);
+    void fill_features(const ParseState &state, const Sentence &sent, std::vector<FeatureKey> & features, size_t start_index) override;
+private:
+    AttributeExtractor lhs;
+    AttributeExtractor rhs;
+};
+
+// rhs.fill_features();
+
+
+// auto what = ProductCombiner(2.0, 5.0);
+
 
 /*
 namespace std {
@@ -84,7 +121,6 @@ struct WeightSection {
         weights.resize(section_size);
         cumulative.resize(section_size);
     }
-
 };
 
 /*

@@ -4,6 +4,7 @@
 #include "output.h"
 #include <algorithm>
 #include "hashtable_block.h"
+#include "feature_set_parser.h"
 
 
 using namespace std;
@@ -57,9 +58,47 @@ void test_hashtable_block() {
 
 }
 
+void test_feature_set_parser() {
+
+// S0:p + N0:p + ( S0:z @ N0:i )
+// N0:p + f(S0:p, x)
+// head ( N0 ) :p
+
+    // "S0:p + N0:p + (S0:z @ N0:i)"
+    // "N0:p + f(S0:p, x)"
+    // auto tokens = infix_to_prefix(tokenize_line("N0:p + S0:x"));
+    // auto tokens = infix_to_prefix(tokenize_line("S0:p + N0:p + (S0:z @ N0:i)"));
+    // auto tokens = infix_to_prefix(tokenize_line("f(S0:z, N0:i + X:x)"));
+
+    try {
+        auto dict = CorpusDictionary {};
+        auto prefix_tokenized = tokenize_line("N0:p + (S0:w + S0:p)", dict);
+        auto tokens = infix_to_prefix(prefix_tokenized);
+
+        for (auto & token : tokens)
+            cout <<  "'" << token->content << "' ";
+        cout << "\n";
+
+        auto combined = make_feature_combiner(tokens);
+        cout << "Combined: " << combined->name;
+
+    } catch (std::runtime_error * e) {
+        std::cerr << "Exception: " << e->what() << "\n" << endl;
+    }
+
+    // auto combined = make_feature_combiner(tokens);
+    // cout << "\nCombined " << combined.name << "\n";
+
+    // tokenize_line("N0:p + f(S0:p, x)");
+
+
+
+}
+
 int main() {
     // test_hashtable_block();
-    train_test_parser();
+    // train_test_parser();
+    test_feature_set_parser();
 
     return 0;
 }

@@ -1,3 +1,5 @@
+#include <stddef.h>
+#include <Python/Python.h>
 #include "features.h"
 
 using namespace std;
@@ -14,7 +16,7 @@ void FeatureBuilder2::build(ParseState & state, const Sentence & sent, std::vect
 
         for (auto & attribute_extractor : combined_feature) {
 
-            auto it_pair = attribute_extractor.extract2(state, sent);
+            auto it_pair = attribute_extractor.extract(state, sent);
             auto it_begin = it_pair.first;
             auto it_end = it_pair.second;
             if (it_begin == it_end) {
@@ -66,7 +68,14 @@ vector<combined_feature_t> nivre_feature_set() {
     auto S0_right_p = E("S0_right:p", 'p', S0_right);
     auto S0_left_p = E("S0_left:p", 'p', S0_left);
     auto N0_left_p = E("N0_left:p", 'p', N0_left);
-    
+
+
+    // {((S0w, S0p), (N0w, N0p))},
+    // ProductCombiner(ProductCombiner(S0w, S0p), ProductCombiner(N0w, N0p));
+    // S0w, S0p, N0w, N0p
+    // ProductCombiner(S0w, ProductCombiner(S0p, ProductCombiner(N0w, N0p));
+    //
+
     feature_combinations = {
         {S0w, S0p},
         {S0w, S0p},
@@ -101,7 +110,20 @@ vector<combined_feature_t> nivre_feature_set() {
         {S0p, N0p, N0_left_p}
         
     };
-    
+
+
+    // auto inner_combiner = ProductCombiner<AttributeExtractor, AttributeExtractor>(N0p, N1p);
+    //auto outer_combiner = ProductCombiner<AttributeExtractor, ProductCombiner>(N0p, inner_combiner);
+    // auto inner_combiner = ProductCombiner(N0p, N1p);
+    // auto outer_combiner = ProductCombiner(N1w, inner_combiner);
+    // auto top_combiner = ProductCombiner(outer_combiner, DotProductCombiner(N0p, N1p));
+    // top_combiner.fill_features(nullptr, nullptr, nullptr, 0);
+    //cout << top_combiner
+
+//    auto smth = ProductCombiner<AttributeExtractor, ProductCombiner>(S0p,
+//            ProductCombiner<AttributeExtractor, AttributeExtractor>(N0p, N1p));
+    // auto smth = ProductCombiner(S0p, DotProductCombiner(N0p, N1p));
+
     return feature_combinations;
 }
 
@@ -114,19 +136,20 @@ AttributeExtractor::AttributeExtractor(string name, namespace_t ns, state_locati
 }
 
 std::pair<attribute_list_citerator, attribute_list_citerator>
-AttributeExtractor::extract2(const ParseState & state, const Sentence & sent) const
+AttributeExtractor::extract(const ParseState &state, const Sentence &sent) const
 {
     
     int token_index = state.locations_[location];
     if (token_index >= static_cast<int>(sent.tokens.size())) {
-        // cout << "Token index beyond sentence size. Location: " << location << " pointing to token index: " << token_index << endl;
+        // cout << "Token index beyond sentence size. Location: " << location << " pointing to content index: " << token_index << endl;
     }
 
     // assert(token_index <= static_cast<int>(sent.tokens.size()));
 
     // Token index should be inside the sentence.
     // It may outside the sentence when the location is not defined (value = -1)
-    // or when N0 is pushed beyond the last token.
+    // or when N0 is pushed beyond the last content.
+    // FIXME: should never be pushed beyond the last content.
     if (token_index >= 0 && token_index < sent.tokens.size()) {
         auto & token = sent.tokens[token_index];
 
@@ -153,6 +176,24 @@ AttributeExtractor::extract2(const ParseState & state, const Sentence & sent) co
     return make_pair(_empty_attribute_vector.cend(), _empty_attribute_vector.cend());
 };
 
+void AttributeExtractor::fill_features(const ParseState &state, const Sentence &sent, std::vector<FeatureKey> &features, size_t start_index) {
+    int token_index = state.locations_[location];
+    assert(token_index < sent.tokens.size());
+
+    if (token_index >= 0) {
+        auto & attributes_in_ns = sent.tokens[token_index].namespaces[ns];
+        size_t initial_vector_size = features.size();
+        for (size_t i = start_index; i < initial_vector_size; i++) {
+            for (size_t j = 1; j < attributes_in_ns.size(); j++) {
+                // Make a copy of the current features by inserting it into the vector
+                features.push_back(features[i]);
+                features.back().add_attribute(attributes_in_ns[i]);
+            }
+            features[i].add_attribute(attributes_in_ns[i]);
+        }
+    }
+}
+
 
 
 
@@ -165,6 +206,18 @@ void FeatureKey::add_part(T part, size_t start_index) {
     // memcpy(values.data() + start_index, &part, sizeof(part));
 
 }
+
+template <typename T>
+void FeatureKey::add_part(T part) {
+
+}
+
+void FeatureKey::add_attribute(Attribute attribute, float val) {
+    hash_combine(hashed_val, attribute.index);
+    value *= val;
+}
+
+
 
 /**
 * Return the weights for the given feature.
@@ -225,3 +278,42 @@ WeightMap::WeightMap(size_t section_size_)
 
 }
 
+void ProductCombiner::fill_features(const ParseState &state, const Sentence &sent, std::vector<FeatureKey> &features, size_t start_index) {
+    rhs.fill_features(state, sent, features, start_index);
+    lhs.fill_features(state, sent, features, start_index);
+}
+
+DotProductCombiner::DotProductCombiner(AttributeExtractor lhs_, AttributeExtractor rhs_)
+    : lhs(lhs_), rhs(rhs_) { }
+
+void DotProductCombiner::fill_features(const ParseState &state, const Sentence &sent, std::vector<FeatureKey> &features, size_t start_index) {
+    // Assume that the values in each namespace are sorted
+    auto lhs_it_pair = lhs.extract(state, sent);
+    auto lhs_it = lhs_it_pair.first;
+    auto lhs_end = lhs_it_pair.second;
+
+    auto rhs_it_pair = rhs.extract(state, sent);
+    auto rhs_it = rhs_it_pair.first;
+    auto rhs_end = rhs_it_pair.second;
+
+    float dot_product = 0;
+    while (lhs_it != lhs_end && rhs_it != rhs_end) {
+        if (lhs_it->index == rhs_it->index) {
+            dot_product += lhs_it->value * rhs_it->value;
+            lhs_it++; rhs_it++;
+        } else if (lhs_it->index > rhs_it->index) {
+            rhs_it++;
+        } else {
+            lhs_it++;
+        }
+    }
+
+    size_t vector_initial_size = features.size();
+    for (size_t i = start_index; i < vector_initial_size; i++) {
+        // FIXME what is a proper feature index of the vector product of two namespaces?
+        features[i].add_part(6488931208);
+        features[i].add_part(lhs.ns);
+        features[i].add_part(rhs.ns);
+
+    }
+}

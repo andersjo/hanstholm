@@ -7,3 +7,4 @@ void output_parse_result(std::ostream & out, const Sentence & sentence, const Pa
     // assert(sentence.tokens.size() == result.heads.size() == result.labels.size());
     out << "Parsed sentence with " << sentence.tokens.size() << " tokens. ParseResult has" << result.heads.size() << "\n";
 }
+

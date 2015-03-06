@@ -34,8 +34,11 @@ public:
     std::unordered_map<std::string, label_type_t> label_to_id;
     label_type_t map_label(std::string);
     
-    std::unordered_map<std::string, namespace_t> attribute_to_id;
+    std::unordered_map<std::string, attribute_t> attribute_to_id;
     attribute_t map_attribute(std::string);
+
+    std::unordered_map<std::string, namespace_t> namespace_to_id;
+    namespace_t map_namespace(std::string);
 
     bool frozen = false;
 private:
@@ -60,6 +63,7 @@ using attribute_vector = std::vector<Attribute>;
 struct Token {
     std::string id;
     std::vector<Attribute> attributes {};
+    std::vector<attribute_vector> namespaces {};
     label_type_t label;
     token_index_t index;
     token_index_t head;
@@ -98,6 +102,21 @@ namespace state_location {
         N0_left2, // The second leftmost modifier of N0
         COUNT
     };
+
+    static const std::unordered_map<std::string, LocationName> name_to_id = {
+            {"S0", S0},
+            {"S0_head", S0_head},
+            {"S0_left", S0_left},
+            {"S0_left2", S0_left2},
+            {"S0_right", S0_right},
+            {"S0_right2", S0_right2},
+            {"N0", N0},
+            {"N1", N1},
+            {"N2", N2},
+            {"N0_left", N0_left},
+            {"N0_left2", N0_left2}
+    };
+
 }
 
 using state_location_t = std::array<token_index_t, state_location::LocationName::COUNT>;

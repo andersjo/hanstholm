@@ -167,7 +167,7 @@ LabeledMoveSet ArcEager::allowed_labeled_moves(const ParseState &state) {
         moves.allow_all();
 
         // SHIFT moves N0 to the stack and is not possible
-        // if N0 is set to the last token in the sentence
+        // if N0 is set to the last content in the sentence
         if (state.n0 == (state.length-1))
             moves.set(Move::SHIFT, false);
 
@@ -181,7 +181,7 @@ LabeledMoveSet ArcEager::allowed_labeled_moves(const ParseState &state) {
         if (state.heads[stack.back()] != -1)
             moves.set(Move::LEFT_ARC, false);
 
-        // RIGHT-ARC not possible if S0 is the ROOT token.
+        // RIGHT-ARC not possible if S0 is the ROOT content.
         if (stack.back() == (state.length - 1))
             moves.set(Move::RIGHT_ARC, false);
 
@@ -305,6 +305,11 @@ attribute_t CorpusDictionary::map_attribute(string attribute) {
     return map_any(attribute_to_id, attribute);
 }
 
+
+namespace_t CorpusDictionary::map_namespace(string ns) {
+    return map_any(namespace_to_id, ns);
+}
+
 template <typename T>
 T CorpusDictionary::map_any(unordered_map<string, T> & map, string key) {
     if (frozen) {
@@ -318,4 +323,3 @@ T CorpusDictionary::map_any(unordered_map<string, T> & map, string key) {
         return pair.first->second;
     }
 }
-
