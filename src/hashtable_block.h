@@ -47,13 +47,16 @@ public:
     Cell::value_type *insert(size_t key);
     int num_keys_searched = 0;
     int num_lookups = 0;
+
+    // Keys temporarily made public
+    std::vector<size_t> keys;
+
 private:
     inline size_t hash_key(size_t key) {
         return (integerHash(key)) & (keys.size() - 1);
     }
     Cell::value_type *insert_at(size_t key, size_t index);
     std::vector<Cell::value_type > values;
-    std::vector<size_t> keys;
     size_t inserts_before_resize;
     size_t aligned_value_block_size;
 

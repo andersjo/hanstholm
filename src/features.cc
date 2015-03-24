@@ -50,24 +50,25 @@ void FeatureBuilder2::build(ParseState & state, const Sentence & sent, std::vect
 
 
 
-vector<combined_feature_t> nivre_feature_set() {
+vector<combined_feature_t> nivre_feature_set(CorpusDictionary & dict) {
     vector<combined_feature_t> feature_combinations;
     using namespace state_location;
     using E = AttributeExtractor;
     
-    auto S0w = E("S0:w", 'w', S0);
-    auto S0p = E("S0:p", 'p', S0);
-    auto N0w = E("N0:w", 'w', N0);
-    auto N0p = E("N0:p", 'p', N0);
-    auto N1w = E("N1:w", 'w', N1);
-    auto N1p = E("N1:p", 'p', N1);
-    auto N2w = E("N2:w", 'w', N2);
-    auto N2p = E("N2:p", 'p', N2);
     
-    auto S0_head_p = E("S0_head:p", 'p', S0_head);
-    auto S0_right_p = E("S0_right:p", 'p', S0_right);
-    auto S0_left_p = E("S0_left:p", 'p', S0_left);
-    auto N0_left_p = E("N0_left:p", 'p', N0_left);
+    auto S0w = E("S0:w", dict.map_namespace("w"), S0);
+    auto S0p = E("S0:p", dict.map_namespace("p"), S0);
+    auto N0w = E("N0:w", dict.map_namespace("w"), N0);
+    auto N0p = E("N0:p", dict.map_namespace("p"), N0);
+    auto N1w = E("N1:w", dict.map_namespace("w"), N1);
+    auto N1p = E("N1:p", dict.map_namespace("p"), N1);
+    auto N2w = E("N2:w", dict.map_namespace("w"), N2);
+    auto N2p = E("N2:p", dict.map_namespace("p"), N2);
+    
+    auto S0_head_p = E("S0_head:p", dict.map_namespace("p"), S0_head);
+    auto S0_right_p = E("S0_right:p", dict.map_namespace("p"), S0_right);
+    auto S0_left_p = E("S0_left:p", dict.map_namespace("p"), S0_left);
+    auto N0_left_p = E("N0_left:p", dict.map_namespace("p"), N0_left);
 
 
     // {((S0w, S0p), (N0w, N0p))},
@@ -150,6 +151,23 @@ AttributeExtractor::extract(const ParseState &state, const Sentence &sent) const
     // It may outside the sentence when the location is not defined (value = -1)
     // or when N0 is pushed beyond the last content.
     // FIXME: should never be pushed beyond the last content.
+
+    if (token_index >= 0 && token_index < sent.tokens.size()) {
+        auto &token = sent.tokens[token_index];
+
+        for (auto & ns_front : token.namespaces_ng) {
+            // cerr << "ns_front.index = " << ns_front.index << " vs. " << ns << "\n";
+            if (ns_front.index == ns) {
+                // cerr << "Found ns front with size " << ns_front.attributes.size() << "\n";
+                return make_pair(ns_front.attributes.cbegin(), ns_front.attributes.cend());
+            }
+        }
+
+    }
+
+    return make_pair(_empty_attribute_vector.cend(), _empty_attribute_vector.cend());
+
+    /*
     if (token_index >= 0 && token_index < sent.tokens.size()) {
         auto & token = sent.tokens[token_index];
 
@@ -174,6 +192,7 @@ AttributeExtractor::extract(const ParseState &state, const Sentence &sent) const
     }
     
     return make_pair(_empty_attribute_vector.cend(), _empty_attribute_vector.cend());
+    */
 };
 
 void AttributeExtractor::fill_features(const ParseState &state, const Sentence &sent, std::vector<FeatureKey> &features, size_t start_index) {
@@ -246,6 +265,23 @@ float *WeightMap::get_or_insert(FeatureKey key) {
         return val_ptr;
 }
 
+WeightSectionWrap WeightMap::get_or_insert_section(FeatureKey key) {
+    float * val_ptr = table_block.lookup(key.hashed_val);
+    if (val_ptr == nullptr)
+        return WeightSectionWrap(table_block.insert(key.hashed_val), section_size);
+    else
+        return WeightSectionWrap(val_ptr, section_size);
+}
+
+WeightSectionWrap WeightMap::get_or_insert_section(size_t key) {
+    float * val_ptr = table_block.lookup(key);
+    if (val_ptr == nullptr)
+        return WeightSectionWrap(table_block.insert(key), section_size);
+    else
+        return WeightSectionWrap(val_ptr, section_size);
+}
+
+
 /*
 WeightSection & WeightMap::get(FeatureKey key) {
     //std::hash<FeatureKey> hash_fn;
@@ -274,8 +310,7 @@ WeightSection & WeightMap::get(FeatureKey key) {
 */
 
 WeightMap::WeightMap(size_t section_size_)
-        : table_block(262144, section_size_*2), section_size(section_size_)  {
-
+        : table_block(262144, section_size_ * WeightSectionWrap::num_blocks), section_size(section_size_)  {
 }
 
 void ProductCombiner::fill_features(const ParseState &state, const Sentence &sent, std::vector<FeatureKey> &features, size_t start_index) {
@@ -317,3 +352,4 @@ void DotProductCombiner::fill_features(const ParseState &state, const Sentence &
 
     }
 }
+

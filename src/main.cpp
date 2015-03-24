@@ -11,7 +11,7 @@ using namespace std;
 
 void train_test_parser() {
     // Read corpus
-    string train_filename = "/users/anders/data/treebanks/udt_1/rungsted/en-universal-small.conll";
+    string train_filename = "/users/anders/data/treebanks/udt_1/rungsted/en-universal-dev.conll";
     string test_filename = "/users/anders/data/treebanks/udt_1/rungsted/en-universal-small.conll";
 //    string filename = "/users/anders/data/treebanks/udt_1/rungsted/en-universal-small.conll";
     auto dict = CorpusDictionary {};
@@ -19,7 +19,7 @@ void train_test_parser() {
     auto test_sents  = VwSentenceReader(test_filename, dict).read();
     cout << "Sentences loaded\n";
 
-    auto feature_set = nivre_feature_set();
+    auto feature_set = nivre_feature_set(dict);
     auto parser = TransitionParser<ArcEager>(dict, feature_set, 5);
     parser.fit(train_sents);
 
@@ -97,8 +97,8 @@ void test_feature_set_parser() {
 
 int main() {
     // test_hashtable_block();
-    // train_test_parser();
-    test_feature_set_parser();
+    train_test_parser();
+    // test_feature_set_parser();
 
     return 0;
 }

@@ -24,7 +24,7 @@ using label_type_t = short;
 using feature_type_t = signed char;
 using lexical_feature_t = int;
 using attribute_t = int;
-using namespace_t = uint8_t;
+using namespace_t = int;
 
 /**
  * Maps words, part-of-speech tags, and labels to integers.
@@ -46,6 +46,7 @@ private:
     T map_any(std::unordered_map<std::string, T> &, std::string);
 };
 
+
 struct Attribute {
     size_t index;
     lexical_feature_t value;
@@ -60,10 +61,25 @@ constexpr size_t last_printable_char = 126;
 constexpr size_t num_printable_chars = last_printable_char - first_printable_char + 1;
 
 using attribute_vector = std::vector<Attribute>;
+
+struct NamespaceFront {
+    namespace_t index = -1;
+    token_index_t token_specific = -1;
+    attribute_vector attributes;
+    // std::vector<attribute_vector> edge_attributes {};
+    /*
+    NamespaceFront() {
+        std::cout << "Constructor called " << attributes.size() << "\n";
+    }
+    */
+};
+
+
 struct Token {
     std::string id;
     std::vector<Attribute> attributes {};
     std::vector<attribute_vector> namespaces {};
+    std::vector<NamespaceFront> namespaces_ng {};
     label_type_t label;
     token_index_t index;
     token_index_t head;

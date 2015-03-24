@@ -65,7 +65,7 @@ public:
 
 
 using combined_feature_t = std::vector<AttributeExtractor>;
-std::vector<combined_feature_t> nivre_feature_set();
+std::vector<combined_feature_t> nivre_feature_set(CorpusDictionary &);
 
 
 class ProductCombiner : public ExtractorBase {
@@ -142,6 +142,19 @@ struct HashCell {
 };
 
 
+
+// A weight section consists of a number of named blocks.
+// Idea: generalize this concept by using enums for names and 2D Eigen for data storage.
+struct WeightSectionWrap {
+    WeightSectionWrap(float * const base, const size_t num_elems) : base(base), num_elems(num_elems) {};
+    inline float * const weights() { return base; };
+    inline float * const acc_weights() { return base + num_elems; };
+    inline float * const update_timestamp() { return base + num_elems * 2; };
+    float * const base;
+    size_t num_elems;
+    const static size_t num_blocks = 3;
+};
+
 class WeightMap {
 
 public:
@@ -149,15 +162,21 @@ public:
     WeightMap(size_t);
     WeightSection & get(FeatureKey);
     float *get_or_insert(FeatureKey);
+    std::vector<size_t> all_keys();
+    WeightSectionWrap get_or_insert_section(FeatureKey);
+    WeightSectionWrap get_or_insert_section(size_t);
     // std::unordered_map<FeatureKey, WeightSection> weights;
     // HashTable<HashCell> table { 262144 };
     HashTableBlock table_block;
-    float * weights_begin(float * base) {
+    inline float * weights_begin(float * base) {
         return base;
     };
+    size_t num_updates = 0;
+
+    // Temp made public
+    size_t section_size;
 
 private:
-    size_t section_size;
     // size_t aligned_section_size;
 };
 
