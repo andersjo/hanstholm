@@ -15,7 +15,8 @@ using namespace std;
 
 template<typename T>
 size_t argmax(T container) {
-    typename T::value_type best_val{};
+    typename T::value_type best_val = -std::numeric_limits<typename T::value_type>::infinity();
+
     size_t best_index = 0;
     size_t index = 0;
 
