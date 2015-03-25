@@ -56,6 +56,9 @@ void ParseState::add_edge(token_index_t head, token_index_t dep, label_type_t la
 }
 
 bool ParseState::is_terminal() {
+    // A parse state is final iff
+    // 1) the front of the buffer points at the last element (the root node); and
+    // 2) the stack is empty.
     return (n0 == (length - 1)) && stack.empty();
 }
 
@@ -159,6 +162,7 @@ LabeledMoveSet ArcEager::allowed_labeled_moves(const ParseState &state) {
     auto & stack = state.stack;
 
     if (state.stack.size() == 0) {
+        assert(state.n0 < (state.length - 1));
         moves.set(Move::SHIFT);
         return moves;
     } else {
@@ -167,8 +171,8 @@ LabeledMoveSet ArcEager::allowed_labeled_moves(const ParseState &state) {
         moves.allow_all();
 
         // SHIFT moves N0 to the stack and is not possible
-        // if N0 is set to the last content in the sentence
-        if (state.n0 == (state.length-1))
+        // if N0 is set to the last token in the sentence.
+        if (state.n0 >= (state.length-1))
             moves.set(Move::SHIFT, false);
 
         // REDUCE throws S0 away,
@@ -181,10 +185,10 @@ LabeledMoveSet ArcEager::allowed_labeled_moves(const ParseState &state) {
         if (state.heads[stack.back()] != -1)
             moves.set(Move::LEFT_ARC, false);
 
-        // RIGHT-ARC not possible if S0 is the ROOT content.
-        if (stack.back() == (state.length - 1))
+        // RIGHT-ARC makes S0 the head of B0
+        // and is invalid if B0 is the ROOT node.
+        if (state.n0 >= (state.length-1))
             moves.set(Move::RIGHT_ARC, false);
-
     }
 
     return moves;
@@ -196,12 +200,12 @@ void perform_move(LabeledMove lmove, ParseState &state, const vector<Token> &tok
     auto & stack = state.stack;
     switch (lmove.move) {
         case Move::SHIFT:
-            assert(state.n0 < tokens.size());
+            assert(state.n0 < tokens.size() - 1);
             stack.push_back(state.n0);
             state.n0++;
             break;
         case Move::RIGHT_ARC:
-            assert(!stack.empty() && state.n0 < tokens.size());
+            assert(!stack.empty() && state.n0 < tokens.size() - 1);
             state.add_edge(stack.back(), state.n0, lmove.label);
             stack.push_back(state.n0);
             state.n0++;
