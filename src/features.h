@@ -149,7 +149,7 @@ struct WeightSectionWrap {
     WeightSectionWrap(float * const base, const size_t num_elems) : base(base), num_elems(num_elems) {};
     inline float * const weights() { return base; };
     inline float * const acc_weights() { return base + num_elems; };
-    inline float * const update_timestamp() { return base + num_elems * 2; };
+    inline float * const update_timestamps() { return base + num_elems * 2; };
     float * const base;
     size_t num_elems;
     const static size_t num_blocks = 3;
@@ -164,7 +164,7 @@ public:
     float *get_or_insert(FeatureKey);
     std::vector<size_t> all_keys();
     WeightSectionWrap get_or_insert_section(FeatureKey);
-    WeightSectionWrap get_or_insert_section(size_t);
+    WeightSectionWrap get_section(size_t);
     // std::unordered_map<FeatureKey, WeightSection> weights;
     // HashTable<HashCell> table { 262144 };
     HashTableBlock table_block;

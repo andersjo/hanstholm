@@ -273,10 +273,10 @@ WeightSectionWrap WeightMap::get_or_insert_section(FeatureKey key) {
         return WeightSectionWrap(val_ptr, section_size);
 }
 
-WeightSectionWrap WeightMap::get_or_insert_section(size_t key) {
+WeightSectionWrap WeightMap::get_section(size_t key) {
     float * val_ptr = table_block.lookup(key);
     if (val_ptr == nullptr)
-        return WeightSectionWrap(table_block.insert(key), section_size);
+        throw std::out_of_range("Key " + std::to_string(key) + " not found");
     else
         return WeightSectionWrap(val_ptr, section_size);
 }

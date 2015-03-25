@@ -134,7 +134,7 @@ void TransitionParser<Strategy>::do_update(vector<FeatureKey> &features, Labeled
 
         auto *w = section.weights();
         auto *acc_weights = section.acc_weights();
-        auto *update_timestamp = section.update_timestamp();
+        auto *update_timestamp = section.update_timestamps();
 
         // Predicted
         w[pred_move.index] -= 1;
@@ -150,24 +150,23 @@ void TransitionParser<Strategy>::do_update(vector<FeatureKey> &features, Labeled
 template<typename Strategy>
 void TransitionParser<Strategy>::finish_learn() {
     // Average weights in a hacky way that exposes details of the hash table better left unexposed.
-    for (const auto key : weights.table_block.keys) {
+    for (size_t key : weights.table_block.keys) {
         if (key != 0) {
-            auto section = weights.get_or_insert_section(key);
+            auto section = weights.get_section(key);
             auto *w = section.weights();
-            auto *acc_weights = section.acc_weights();
-            auto *update_timestamp = section.update_timestamp();
 
+            auto *acc_weights = section.acc_weights();
+            auto *update_timestamps = section.update_timestamps();
 
             for (int i = 0; i < weights.section_size; i++) {
                 // Add missed updates to acc_weights
-                acc_weights[i] += w[i] * (weights.num_updates - update_timestamp[i]);
+                acc_weights[i] += w[i] * (weights.num_updates - update_timestamps[i]);
                 // Transfer average weight
                 w[i] = acc_weights[i] / weights.num_updates;
             }
         }
     }
 }
-
 
 template<typename Strategy>
 ParseResult TransitionParser<Strategy>::parse(const Sentence &sent) {
@@ -193,7 +192,7 @@ ParseResult TransitionParser<Strategy>::parse(const Sentence &sent) {
 
 
         LabeledMove pred_move = predict_move();
-        // cout << "Predicted move " << static_cast<int>(pred_move.move) << "\n";
+//        cout << "Predicted move " << static_cast<int>(pred_move.move) << "\n";
         // cout << "State N0 is" << state.n0 << "\n";
         // cout << "Stack size is " << state.stack.size() << "\n";
         perform_move(pred_move, state, sent.tokens);
@@ -214,7 +213,6 @@ void TransitionParser<Strategy>::score_moves(std::vector<FeatureKey> &features) 
         for (int move_id = 0; move_id < num_labeled_moves; move_id++) {
             // scores[move_id] += weights.weights_begin(w_section)[move_id];
             scores[move_id] += w_section[move_id];
-
         }
     }
 }
