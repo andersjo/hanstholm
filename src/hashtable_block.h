@@ -45,8 +45,6 @@ public:
     // Basic operations
     Cell::value_type *lookup(size_t key);
     Cell::value_type *insert(size_t key);
-    int num_keys_searched = 0;
-    int num_lookups = 0;
 
     // Keys temporarily made public
     std::vector<size_t> keys;

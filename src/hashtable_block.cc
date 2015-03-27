@@ -28,18 +28,15 @@ HashTableBlock::HashTableBlock(size_t initial_size, size_t value_block_size)
 
 Cell::value_type * HashTableBlock::lookup(size_t key)
 {
-    num_lookups += 1;
     size_t candidate_index = hash_key(key);
     // Forward search
     for (int i = candidate_index; i < keys.size(); i++) {
-        num_keys_searched += 1;
         if (keys[i] == key) return &values[aligned_value_block_size * i];
         if (keys[i] == 0) return nullptr;
     }
 
     // Search from the beginning
     for (int i = 0; i < candidate_index; i++) {
-        num_keys_searched += 1;
         if (keys[i] == key) return &values[aligned_value_block_size * i];
         if (keys[i] == 0) return nullptr;
     }

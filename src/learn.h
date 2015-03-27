@@ -77,10 +77,7 @@ void TransitionParser<Strategy>::fit(std::vector<Sentence> &sentences) {
     for (int round_i = 0; round_i < num_rounds; round_i++) {
         int num_updates = 0;
         int num_tokens_seen = 0;
-        cout << "Round " << round_i << " begun\n";
-        cout << "Here, " << (static_cast<double>(weights.table_block.num_keys_searched) / static_cast<double>(weights.table_block.num_lookups)) << " keys searched on avg.\n";
-        weights.table_block.num_keys_searched = 1;
-        weights.table_block.num_lookups = 1;
+        cout << "Pass " << round_i + 1 << " begun\n";
 
 
         for (auto sent : sentences) {
