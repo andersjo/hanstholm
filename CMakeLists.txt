@@ -11,4 +11,14 @@ set(SOURCE_FILES src/main.cpp src/features.cc
     src/output.cc src/output.cc
     src/feature_set_parser.cc
     )
-add_executable(hanstholm ${SOURCE_FILES})
+
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
+
+find_package(Boost 1.36.0 COMPONENTS system program_options REQUIRED)
+if(Boost_FOUND)
+  message("Boost is found")
+  include_directories(${Boost_INCLUDE_DIRS})
+  add_executable(hanstholm ${SOURCE_FILES})
+  target_link_libraries(hanstholm ${Boost_LIBRARIES})
+endif()
