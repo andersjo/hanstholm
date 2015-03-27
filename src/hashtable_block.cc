@@ -37,7 +37,7 @@ Cell::value_type * HashTableBlock::lookup(size_t key)
         if (keys[i] == 0) return nullptr;
     }
 
-    // Backward search
+    // Search from the beginning
     for (int i = 0; i < candidate_index; i++) {
         num_keys_searched += 1;
         if (keys[i] == key) return &values[aligned_value_block_size * i];
@@ -57,7 +57,7 @@ Cell::value_type * HashTableBlock::insert(size_t key)
         if (keys[i] == 0) return insert_at(key, i);
     }
 
-    // Backward search
+    // Search from the beginning
     for (size_t i = 0; i < candidate_index; i++) {
         if (keys[i] == key) return &values[aligned_value_block_size * i];
         if (keys[i] == 0) return insert_at(key, i);

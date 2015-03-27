@@ -109,7 +109,6 @@ vector<combined_feature_t> nivre_feature_set(CorpusDictionary & dict) {
         {S0p, S0_left_p, N0p},
         {S0p, S0_right_p, N0p},
         {S0p, N0p, N0_left_p}
-        
     };
 
 
@@ -310,7 +309,7 @@ WeightSection & WeightMap::get(FeatureKey key) {
 */
 
 WeightMap::WeightMap(size_t section_size_)
-        : table_block(262144, section_size_ * WeightSectionWrap::num_blocks), section_size(section_size_)  {
+        : table_block(4194304, section_size_ * WeightSectionWrap::num_blocks), section_size(section_size_)  {
 }
 
 void ProductCombiner::fill_features(const ParseState &state, const Sentence &sent, std::vector<FeatureKey> &features, size_t start_index) {

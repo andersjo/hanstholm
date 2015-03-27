@@ -20,11 +20,12 @@ using token_index_t = int;
 using weight_t = float;
 
 using pos_feature_t = signed char;
-using label_type_t = short;
+using label_type_t = int;
 using feature_type_t = signed char;
 using lexical_feature_t = int;
 using attribute_t = int;
 using namespace_t = int;
+
 
 /**
  * Maps words, part-of-speech tags, and labels to integers.
@@ -45,6 +46,14 @@ private:
     template <typename T>
     T map_any(std::unordered_map<std::string, T> &, std::string);
 };
+
+template <typename Key, typename Value>
+std::unordered_map<Value, Key> invert_map(std::unordered_map<Key, Value> & orig_map) {
+    std::unordered_map<Value, Key> inverted_map {};
+    for (auto & kv_pair : orig_map)
+        inverted_map.emplace(kv_pair.second, kv_pair.first);
+    return inverted_map;
+}
 
 
 struct Attribute {

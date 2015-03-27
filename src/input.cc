@@ -136,6 +136,9 @@ weight_t VwSentenceReader::get_number_or_default(string::const_iterator str_pos,
 
 vector<Sentence> VwSentenceReader::read() {
     std::ifstream infile(filename);
+    if (!infile.good())
+        throw std::runtime_error("File " + filename + " cannot be read");
+
     corpus.clear();
     line_no = 1;
 

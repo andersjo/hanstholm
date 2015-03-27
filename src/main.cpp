@@ -6,34 +6,50 @@
 #include "hashtable_block.h"
 #include "feature_set_parser.h"
 
+#include <boost/program_options.hpp>
+#include <fstream>
+
 
 using namespace std;
 
-void train_test_parser() {
+void train_test_parser(string data_file, string eval_file, string pred_file, int num_passes) {
     // Read corpus
-    string train_filename = "/users/anders/data/treebanks/udt_1/rungsted/en-universal-dev.conll";
-    string test_filename = "/users/anders/data/treebanks/udt_1/rungsted/en-universal-small.conll";
-//    string filename = "/users/anders/data/treebanks/udt_1/rungsted/en-universal-small.conll";
     auto dict = CorpusDictionary {};
-    auto train_sents = VwSentenceReader(train_filename, dict).read();
-    auto test_sents  = VwSentenceReader(test_filename, dict).read();
-    cout << "Sentences loaded\n";
+    auto train_sents = VwSentenceReader(data_file, dict).read();
+    auto test_sents  = VwSentenceReader(eval_file, dict).read();
+    cerr << "Data set loaded\n";
+    cerr << "\tTrain:" << train_sents.size() << " sentences\n";
+    cerr << "\tTest:" << test_sents.size() << " sentences\n";
+
+    cerr << "Using " << num_passes << " passes\n";
 
     auto feature_set = nivre_feature_set(dict);
-    auto parser = TransitionParser<ArcEager>(dict, feature_set, 5);
+    auto parser = TransitionParser<ArcEager>(dict, feature_set, num_passes);
     parser.fit(train_sents);
 
     ParseResult parsed_sentence;
+    auto id_to_label = invert_map(dict.label_to_id);
 
-    for (const auto & sent : test_sents) {
-        cout << "Parsing test sentence\n";
-        parsed_sentence = parser.parse(sent);
-        output_parse_result(cout, sent, parsed_sentence);
+    std::ofstream ofs;
+    if (pred_file.size() > 0) {
+        ofs.open(pred_file, std::ofstream::trunc);
+        if (!ofs.good())
+            throw std::runtime_error("Could not open prediction file " + pred_file + " for writing");
+    } else {
+        // FIXME does not work on windows
+        ofs.open("/dev/null");
     }
 
+    bool first_sent = true;
+    for (const auto & sent : test_sents) {
+        if (first_sent)
+            first_sent = false;
+        else
+            ofs << "\n";
 
-
-
+        parsed_sentence = parser.parse(sent);
+        output_parse_result(ofs, sent, parsed_sentence, id_to_label);
+    }
 }
 
 void test_hashtable_block() {
@@ -95,10 +111,67 @@ void test_feature_set_parser() {
 
 }
 
-int main() {
+namespace po = boost::program_options;
+
+void print_usage(po::options_description desc) {
+    cout << "Hanstholm parser\n";
+    cout << desc;
+
+}
+
+int main(int argc, const char* argv[]) {
+
+    try {
+        string data_file;
+        string eval_file;
+        string pred_file;
+        int num_passes = 5;
+
+        po::options_description desc("Allowed options");
+        desc.add_options()
+                ("help", "produce help message")
+                ("data,d", po::value<std::string>(&data_file)->required(), "input datafile")
+                ("eval,e", po::value<std::string>(&eval_file)->required(), "evaluation file")
+                ("passes", po::value<int>(&num_passes), "number of passes over the training set")
+                ("predictions,p", po::value<string>(&pred_file), "write predictions to this file")
+                ;
+
+        // What options to support
+        // - Input file
+        // - Test file
+        // - Number of rounds
+        // - Average or not
+        // - Ignore namespace
+
+
+
+        po::variables_map vm;
+        po::store(po::parse_command_line(argc, argv, desc), vm);
+
+        if (vm.size() == 0 || vm.count("help")) {
+            print_usage(desc);
+            return 0;
+        }
+        po::notify(vm);
+
+        // Find better way to pass parameters into the program
+        train_test_parser(data_file, eval_file, pred_file, num_passes);
+
+    }
+    catch(exception& e) {
+        cerr << "error: " << e.what() << "\n";
+        return 1;
+    }
+    catch(...) {
+        cerr << "Exception of unknown type!\n";
+    }
+
+
+
     // test_hashtable_block();
-    train_test_parser();
+    // train_test_parser();
     // test_feature_set_parser();
 
     return 0;
 }
+

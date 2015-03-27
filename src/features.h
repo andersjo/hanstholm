@@ -11,6 +11,7 @@
 #include "hash.h"
 #include "hashtable.h"
 
+#include <Eigen/Dense>
 
 struct FeatureKey {
     size_t hashed_val = 0;
@@ -168,9 +169,6 @@ public:
     // std::unordered_map<FeatureKey, WeightSection> weights;
     // HashTable<HashCell> table { 262144 };
     HashTableBlock table_block;
-    inline float * weights_begin(float * base) {
-        return base;
-    };
     size_t num_updates = 0;
 
     // Temp made public

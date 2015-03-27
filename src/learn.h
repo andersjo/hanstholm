@@ -74,7 +74,6 @@ template<typename Strategy>
 void TransitionParser<Strategy>::fit(std::vector<Sentence> &sentences) {
     std::vector<FeatureKey> features;
 
-    int num_updates_total = 0;
     for (int round_i = 0; round_i < num_rounds; round_i++) {
         int num_updates = 0;
         int num_tokens_seen = 0;
@@ -130,20 +129,30 @@ void TransitionParser<Strategy>::do_update(vector<FeatureKey> &features, Labeled
     weights.num_updates++;
     for (auto &feature : features) {
         // Idea: separate update step to a function
+        // FIXME: Check that features are unique and do not occur multiple times in the feature vector
         auto section = weights.get_or_insert_section(feature);
 
         auto *w = section.weights();
         auto *acc_weights = section.acc_weights();
         auto *update_timestamp = section.update_timestamps();
 
-        // Predicted
-        w[pred_move.index] -= 1;
-        acc_weights[pred_move.index] -= (weights.num_updates - update_timestamp[pred_move.index]) * 1;
-        update_timestamp[pred_move.index] = weights.num_updates;
+        // Perform missed updates on the accumulated weights due to sparse updating
+        float num_missed_updates_pred = weights.num_updates - update_timestamp[pred_move.index] - 1;
+        float num_missed_updates_gold = weights.num_updates - update_timestamp[gold_move.index] - 1;
 
-        w[gold_move.index] += 1;
-        acc_weights[gold_move.index] += (weights.num_updates - update_timestamp[gold_move.index]) * 1;
+        acc_weights[pred_move.index] += num_missed_updates_pred * w[pred_move.index];
+        acc_weights[gold_move.index] += num_missed_updates_gold * w[gold_move.index];
+
+        update_timestamp[pred_move.index] = weights.num_updates;
         update_timestamp[gold_move.index] = weights.num_updates;
+
+        // Gold
+        w[gold_move.index] += 1;
+        acc_weights[gold_move.index] += 1;
+
+        // Pred
+        w[pred_move.index] -= 1;
+        acc_weights[pred_move.index] -= 1;
     }
 }
 
@@ -159,10 +168,20 @@ void TransitionParser<Strategy>::finish_learn() {
             auto *update_timestamps = section.update_timestamps();
 
             for (int i = 0; i < weights.section_size; i++) {
+                if (update_timestamps[i] == 0)
+                    continue;
+
                 // Add missed updates to acc_weights
-                acc_weights[i] += w[i] * (weights.num_updates - update_timestamps[i]);
+                float num_missed_updates = (weights.num_updates - update_timestamps[i]);
+                acc_weights[i] = acc_weights[i] + (w[i] * num_missed_updates);
+
+
+                // cerr << "num_missed_updates = " << num_missed_updates << "\n";
                 // Transfer average weight
-                w[i] = acc_weights[i] / weights.num_updates;
+                // cerr  << "acc_weights[i] = " << acc_weights[i] << "\n";
+                // w[i] = acc_weights[i] / weights.num_updates;
+                w[i] = acc_weights[i];
+                 // cerr << "w[i] = " << w[i] << "\n";
             }
         }
     }
@@ -170,7 +189,6 @@ void TransitionParser<Strategy>::finish_learn() {
 
 template<typename Strategy>
 ParseResult TransitionParser<Strategy>::parse(const Sentence &sent) {
-
     std::vector<FeatureKey> features;
     auto state = ParseState(sent.tokens.size());
 
