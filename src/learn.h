@@ -105,9 +105,7 @@ void TransitionParser<Strategy>::fit(std::vector<Sentence> &sentences) {
                     do_update(features, pred_move, gold_move);
                 }
 
-
                 perform_move(gold_move, state, sent.tokens);
-
                 features.clear();
 
             }
@@ -170,15 +168,8 @@ void TransitionParser<Strategy>::finish_learn() {
 
                 // Add missed updates to acc_weights
                 float num_missed_updates = (weights.num_updates - update_timestamps[i]);
-                acc_weights[i] = acc_weights[i] + (w[i] * num_missed_updates);
-
-
-                // cerr << "num_missed_updates = " << num_missed_updates << "\n";
-                // Transfer average weight
-                // cerr  << "acc_weights[i] = " << acc_weights[i] << "\n";
-                // w[i] = acc_weights[i] / weights.num_updates;
-                w[i] = acc_weights[i];
-                 // cerr << "w[i] = " << w[i] << "\n";
+                acc_weights[i] += w[i] * num_missed_updates;
+                w[i] = acc_weights[i] / weights.num_updates;
             }
         }
     }
