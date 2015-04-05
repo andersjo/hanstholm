@@ -240,7 +240,7 @@ public:
 void perform_move(LabeledMove move, ParseState &state, const std::vector<Token> &tokens);
 
 struct ArcEager {
-    using ParseState = ParseState;
+    using ParseState = ::ParseState;
     static LabeledMoveSet oracle(const ParseState & state, const Sentence & sent);
     static std::vector<LabeledMove> moves(size_t num_labels);
     static LabeledMoveSet allowed_labeled_moves(const ParseState & state);
