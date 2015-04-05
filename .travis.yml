@@ -3,6 +3,14 @@ compiler:
   - gcc
   - clang
 
+addons:
+  apt:
+    packages:
+    - cmake
+    - libboost-all-dev
+
+sudo: false
+
 before_script:
   - mkdir build
   - cd build
