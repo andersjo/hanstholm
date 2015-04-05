@@ -13,7 +13,7 @@ set(SOURCE_FILES src/main.cpp src/features.cc
     )
 
 
-set(Boost_USE_MULTI_THREADED OFF)
+# set(Boost_USE_MULTI_THREADED OFF)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
 set(BOOST_LIBRARYDIR "${BOOST_ROOT}/lib")
 
