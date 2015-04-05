@@ -3,6 +3,7 @@
 // head ( N0 ) :p
 
 #include "parse.h"
+#include <memory>
 
 template<typename T, typename ...Args>
 std::unique_ptr<T> make_unique( Args&& ...args )
