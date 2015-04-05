@@ -99,7 +99,7 @@ void HashTableBlock::resize(size_t new_size)
             // std::cout << old_keys[i] << " ";
             auto * new_vals = insert(old_keys[i]);
             auto * old_vals = &old_values[i * aligned_value_block_size];
-            std::memcpy(new_vals, old_vals, aligned_value_block_size * sizeof(Cell::value_type));
+            memcpy(new_vals, old_vals, aligned_value_block_size * sizeof(Cell::value_type));
         }
     }
     std::cout << "Repopulating done...\n";
