@@ -1,5 +1,4 @@
 #include <stddef.h>
-#include <Python/Python.h>
 #include "features.h"
 
 using namespace std;

@@ -1,7 +1,6 @@
 #include "features.h"
 
 #include <fstream>
-#include <Python/Python.h>
 #include <sstream> // stringstream
 
 
