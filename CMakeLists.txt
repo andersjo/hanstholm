@@ -14,10 +14,11 @@ set(SOURCE_FILES src/main.cpp src/features.cc
 
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
+set(BOOST_LIBRARYDIR "${BOOST_ROOT}/lib")
 
-find_package(Boost 1.36.0 COMPONENTS system program_options REQUIRED)
+
+find_package(Boost 1.36.0 REQUIRED system program_options)
 if(Boost_FOUND)
-  set(BOOST_LIBRARYDIR "${BOOST_ROOT}/lib")
   message("Boost is found")
   include_directories(${Boost_INCLUDE_DIRS})
   add_executable(hanstholm ${SOURCE_FILES})
