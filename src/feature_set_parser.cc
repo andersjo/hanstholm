@@ -2,8 +2,11 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <fstream>
 #include <assert.h>
 #include "feature_set_parser.h"
+
+#include <boost/algorithm/string.hpp>
 
 
 LexTokenType token_string_to_type(std::string token_str) {
@@ -220,10 +223,39 @@ feature_combiner_uptr FunctionToken::apply(feature_combiner_uptr arg1, feature_c
     else
         combined_name = content + "(" + arg1->name + ", " + arg2->name + ")";
 
-    if (content == "+") {
+    if (content == "++") {
         return make_unique<CartesianProduct>(combined_name, std::move(arg1), std::move(arg2));
     }
 
     throw std::runtime_error("Operator or function ' " + content + "' not supported.");
+
+}
+
+void read_feature_file(std::string filename, CorpusDictionary & dict) {
+    std::ifstream infile(filename);
+    if (!infile.good())
+        throw std::runtime_error("File " + filename + " cannot be read");
+
+    std::string line;
+    while (std::getline(infile, line)) {
+        // Ignore everything after comments
+        std::cout << "Original line '" << line << "'\n";
+
+        line = line.substr(0, line.find_first_of('#'));
+        boost::algorithm::trim(line);
+        if (line.size() != 0) {
+            auto infix_tokens = tokenize_line(line, dict);
+            auto prefix_tokens = infix_to_prefix(infix_tokens);
+            auto combiner = make_feature_combiner(prefix_tokens);
+            std::cout << "Combiner name " << combiner->name << "\n";
+        }
+
+
+        std::cout << "Line after mod '" << line << "'\n";
+
+
+
+
+    }
 
 }

@@ -4,6 +4,7 @@
 
 #include "parse.h"
 #include <memory>
+#include "feature_combiner.h"
 
 template<typename T, typename ...Args>
 std::unique_ptr<T> make_unique( Args&& ...args )
@@ -12,7 +13,7 @@ std::unique_ptr<T> make_unique( Args&& ...args )
 }
 
 
-// Break at whitespace, comma, and paranthesis
+// Break at whitespace, comma, and parenthesis
 enum class LexTokenType {
     LOCATION,
     FUNCTION,
@@ -22,30 +23,6 @@ enum class LexTokenType {
     RIGHT_PAREN,
 };
 
-struct FeatureCombinerBase {
-    FeatureCombinerBase(std::string name) : name(name) {};
-    std::string name;
-};
-
-using feature_combiner_uptr = std::unique_ptr<FeatureCombinerBase>;
-
-struct Location : FeatureCombinerBase {
-    Location(std::string &name, state_location::LocationName location_, namespace_t ns_)
-            : FeatureCombinerBase(name), location(location_), ns(ns_) { }
-
-    // feature_combiner_uptr location;
-    state_location::LocationName location;
-    namespace_t ns;
-};
-
-struct CartesianProduct : FeatureCombinerBase {
-    CartesianProduct(std::string &name, feature_combiner_uptr lhs_, feature_combiner_uptr rhs_)
-            : FeatureCombinerBase(name), lhs(std::move(lhs_)), rhs(std::move(rhs_)) {
-    }
-
-    feature_combiner_uptr lhs;
-    feature_combiner_uptr rhs;
-};
 
 LexTokenType token_string_to_type(std::string token_str);
 
@@ -91,3 +68,4 @@ struct FunctionToken : LexToken {
 std::vector<lex_token_uptr> tokenize_line(std::string line, CorpusDictionary & dict);
 std::vector<lex_token_uptr> infix_to_prefix(std::vector<lex_token_uptr > & infix_tokens);
 feature_combiner_uptr make_feature_combiner(std::vector<lex_token_uptr> & prefix_tokens);
+void read_feature_file(std::string filename, CorpusDictionary & dict);

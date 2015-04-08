@@ -78,7 +78,6 @@ vector<combined_feature_t> nivre_feature_set(CorpusDictionary & dict) {
 
     feature_combinations = {
         {S0w, S0p},
-        {S0w, S0p},
         {S0w},
         {S0p},
         {N0w, N0p},

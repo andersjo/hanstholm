@@ -88,7 +88,7 @@ void test_feature_set_parser() {
 
     try {
         auto dict = CorpusDictionary {};
-        auto prefix_tokenized = tokenize_line("N0:p + (S0:w + S0:p)", dict);
+        auto prefix_tokenized = tokenize_line("N0:p ++ (S0:w ++ S0:p)", dict);
         auto tokens = infix_to_prefix(prefix_tokenized);
 
         for (auto & token : tokens)
@@ -96,7 +96,9 @@ void test_feature_set_parser() {
         cout << "\n";
 
         auto combined = make_feature_combiner(tokens);
-        cout << "Combined: " << combined->name;
+        cout << "Combined: " << combined->name << "\n";
+
+        read_feature_file("/users/anders/code/hanstholm/src/nivre.txt", dict);
 
     } catch (std::runtime_error * e) {
         std::cerr << "Exception: " << e->what() << "\n" << endl;
@@ -106,9 +108,6 @@ void test_feature_set_parser() {
     // cout << "\nCombined " << combined.name << "\n";
 
     // tokenize_line("N0:p + f(S0:p, x)");
-
-
-
 }
 
 namespace po = boost::program_options;
@@ -134,6 +133,7 @@ int main(int argc, const char* argv[]) {
                 ("eval,e", po::value<std::string>(&eval_file)->required(), "evaluation file")
                 ("passes", po::value<int>(&num_passes), "number of passes over the training set")
                 ("predictions,p", po::value<string>(&pred_file), "write predictions to this file")
+                ("feature_parser", "test feature parser")
                 ;
 
         // What options to support
@@ -142,9 +142,6 @@ int main(int argc, const char* argv[]) {
         // - Number of rounds
         // - Average or not
         // - Ignore namespace
-
-
-
         po::variables_map vm;
         po::store(po::parse_command_line(argc, argv, desc), vm);
 
@@ -152,10 +149,16 @@ int main(int argc, const char* argv[]) {
             print_usage(desc);
             return 0;
         }
-        po::notify(vm);
 
-        // Find better way to pass parameters into the program
-        train_test_parser(data_file, eval_file, pred_file, num_passes);
+        if (vm.count("feature_parser")) {
+            test_feature_set_parser();
+        } else {
+            po::notify(vm);
+
+            // Find better way to pass parameters into the program
+            train_test_parser(data_file, eval_file, pred_file, num_passes);
+        }
+
 
     }
     catch(exception& e) {

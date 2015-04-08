@@ -1,0 +1,29 @@
+      S0:w ++ S0:p
+S0:w ++ S0:p   # Hello
+S0:w
+S0:p
+N0:w ++ N0:p
+N0:w
+N0:p
+N1:w ++ N1:p
+N1:w
+N1:p
+N2:w ++ N2:p
+N2:w
+N2:p
+
+S0:w ++ S0:p ++ N0:w ++ N0:p
+S0:w ++ S0:p ++ N0:w
+S0:w ++ N0:w ++ N0:p
+S0:w ++ S0:p ++ N0:p
+S0:p ++ N0:w ++ N0:p
+S0:w ++ N0:w
+S0:p ++ N0:p
+N0:p ++ N1:p
+
+N0:p ++ N1:p ++ N2:p
+S0:p ++ N0:p ++ N1:p
+S0:head_p ++ S0:p ++ N0:p
+S0:p ++ S0:left_p ++ N0:p
+S0:p ++ S0:right_p ++ N0:p
+S0:p ++ N0:p ++ N0:left_p
