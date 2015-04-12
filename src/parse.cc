@@ -86,9 +86,7 @@ LabeledMoveSet ArcEager::oracle(const ParseState & state, const Sentence & sent)
     if (tokens[s0].head != n0) {
         // Is the original head still recoverable? If it is it must be in the buffer.
         bool is_head_recoverable = state.has_head_in_buffer(s0, sent);
-        // Does s have any dependencies in the stack, which will be lost by attaching
-        // s to b?
-        if (is_head_recoverable || state.has_dep_in_stack(s0, sent)) {
+        if (is_head_recoverable) {
             moves.set(Move::LEFT_ARC, false);
         }
     }
@@ -171,23 +169,22 @@ LabeledMoveSet ArcEager::allowed_labeled_moves(const ParseState &state) {
 
         // SHIFT moves N0 to the stack and is not possible
         // if N0 is set to the last token in the sentence.
-        if (state.n0 >= (state.length-1))
+        // RIGHT-ARC performs a SHIFT.
+        if (state.n0 == (state.length-1)) {
             moves.set(Move::SHIFT, false);
+            moves.set(Move::RIGHT_ARC, false);
+        }
 
         // REDUCE throws S0 away,
         // and is illegal if S0 has not been assigned a head.
-        if (state.heads[stack.back()] == -1)
+        if (state.heads[stack.back()] == -1) {
             moves.set(Move::REDUCE, false);
+        }
 
         // LEFT-ARC makes B0 the head of S0.
         // It is an illegal move if S0 already has a head.
         if (state.heads[stack.back()] != -1)
             moves.set(Move::LEFT_ARC, false);
-
-        // RIGHT-ARC makes S0 the head of B0
-        // and is invalid if B0 is the ROOT node.
-        if (state.n0 >= (state.length-1))
-            moves.set(Move::RIGHT_ARC, false);
     }
 
     return moves;
