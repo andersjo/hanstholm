@@ -8,6 +8,7 @@
 #include <list>
 #include <boost/algorithm/string/join.hpp>
 #include "features.h"
+#include <memory>
 
 using attribute_list_citerator = std::vector<Attribute>::const_iterator;
 
