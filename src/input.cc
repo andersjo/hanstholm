@@ -114,7 +114,7 @@ void VwSentenceReader::parse_namespace_decl(string::const_iterator start_of_toke
     token.namespaces_ng.emplace_back();
     auto & current_ns = token.namespaces_ng.back();
     current_ns.index = dictionary.map_namespace(ns_name);
-    current_ns.token_specific = dependent_on_index;
+    current_ns.token_specific_ns = dependent_on_index;
 }
 
 

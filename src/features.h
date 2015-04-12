@@ -24,24 +24,13 @@ struct FeatureKey {
     template <typename T>
     void add_part(T);
 
-    void add_attribute(Attribute, float=1);
-
+    void add_attribute(Attribute);
 
     // Conceptually the value is not part of the key,
     // but it is kept here for convenience.
     float value = 1.0;
-    FeatureKey() {};
-    FeatureKey(size_t feature_num)  {
-        hashed_val = feature_num;
-        // feature_template_index = static_cast<short>(feature_num);
-    };
-
-    /*
-    bool operator==(const FeatureKey & other) const {
-        return (values == other.values
-                && feature_template_index == other.feature_template_index);
-    }
-    */
+    // FeatureKey() {};
+    FeatureKey(size_t feature_num = 0) : hashed_val(feature_num), value(1.0) { };
 };
 
 using attribute_list_citerator = std::vector<Attribute>::const_iterator;

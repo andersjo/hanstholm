@@ -23,7 +23,12 @@ void train_test_parser(string data_file, string eval_file, string pred_file, int
 
     cerr << "Using " << num_passes << " passes\n";
 
-    auto feature_set = nivre_feature_set(dict);
+    // auto feature_set = nivre_feature_set(dict);
+    // FIXME Find a good to pass ownership
+    auto feature_set = read_feature_file("/users/anders/code/hanstholm/src/nivre.txt", dict);
+    cerr << "Using feature definition:\n";
+    cerr << feature_set->name << "\n";
+
     auto parser = TransitionParser<ArcEager>(dict, feature_set, num_passes);
     parser.fit(train_sents);
 
@@ -98,7 +103,7 @@ void test_feature_set_parser() {
         auto combined = make_feature_combiner(tokens);
         cout << "Combined: " << combined->name << "\n";
 
-        read_feature_file("/users/anders/code/hanstholm/src/nivre.txt", dict);
+        read_feature_file("/users/anders/code/hanstholm/src/nivre_small.txt", dict);
 
     } catch (std::runtime_error * e) {
         std::cerr << "Exception: " << e->what() << "\n" << endl;
@@ -151,7 +156,7 @@ int main(int argc, const char* argv[]) {
         }
 
         if (vm.count("feature_parser")) {
-            test_feature_set_parser();
+            // test_feature_set_parser();
         } else {
             po::notify(vm);
 

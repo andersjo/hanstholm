@@ -327,3 +327,15 @@ T CorpusDictionary::map_any(unordered_map<string, T> & map, string key) {
     }
 }
 
+const attribute_vector &Token::find_namespace(namespace_t ns, namespace_t token_specific_ns) const {
+    auto ns_found = std::find_if(namespaces_ng.cbegin(), namespaces_ng.cend(),
+                                 [ns,token_specific_ns](const NamespaceFront & ns_front) {
+                                     return ns_front.index == ns && ns_front.token_specific_ns == token_specific_ns;} );
+
+
+    if (ns_found != namespaces_ng.cend()) {
+        return ns_found->attributes;
+    } else {
+        return _empty_attribute_vector;
+    }
+}

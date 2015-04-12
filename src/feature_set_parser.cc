@@ -231,31 +231,26 @@ feature_combiner_uptr FunctionToken::apply(feature_combiner_uptr arg1, feature_c
 
 }
 
-void read_feature_file(std::string filename, CorpusDictionary & dict) {
+std::unique_ptr<UnionList> read_feature_file(std::string filename, CorpusDictionary & dict) {
     std::ifstream infile(filename);
     if (!infile.good())
         throw std::runtime_error("File " + filename + " cannot be read");
 
     std::string line;
+    std::list<feature_combiner_uptr > combiners;
     while (std::getline(infile, line)) {
         // Ignore everything after comments
-        std::cout << "Original line '" << line << "'\n";
-
         line = line.substr(0, line.find_first_of('#'));
         boost::algorithm::trim(line);
         if (line.size() != 0) {
             auto infix_tokens = tokenize_line(line, dict);
             auto prefix_tokens = infix_to_prefix(infix_tokens);
             auto combiner = make_feature_combiner(prefix_tokens);
-            std::cout << "Combiner name " << combiner->name << "\n";
+            combiners.push_back(std::move(combiner));
         }
-
-
-        std::cout << "Line after mod '" << line << "'\n";
-
-
-
-
     }
 
+
+    auto union_list = make_unique<UnionList>(combiners);
+    return union_list;
 }

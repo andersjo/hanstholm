@@ -10,7 +10,10 @@ set(SOURCE_FILES src/main.cpp src/features.cc
     src/hashtable_block.cc
     src/output.cc src/output.cc
     src/feature_set_parser.cc
+    src/feature_combiner.cc
     )
+
+# set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
 
 
 # set(Boost_USE_MULTI_THREADED OFF)

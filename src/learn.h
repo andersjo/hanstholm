@@ -8,6 +8,7 @@
 
 #include "parse.h"
 #include "features.h"
+#include "feature_combiner.h"
 #include <vector>
 #include <numeric>
 
@@ -36,8 +37,8 @@ class TransitionParser {
 public:
     TransitionParser() = default;
 
-    TransitionParser(CorpusDictionary &dict, std::vector<combined_feature_t> feature_set, size_t num_rounds = 5)
-            : corpus_dictionary(dict), num_rounds(num_rounds), feature_builder(feature_set) {
+    TransitionParser(CorpusDictionary &dict, std::unique_ptr<UnionList> & feature_builder_, size_t num_rounds = 5)
+            : corpus_dictionary(dict), num_rounds(num_rounds), feature_builder(std::move(feature_builder_)) {
         labeled_move_list = Strategy::moves(corpus_dictionary.label_to_id.size());
         num_labeled_moves = labeled_move_list.size();
         weights = WeightMap(num_labeled_moves);
@@ -59,7 +60,9 @@ private:
     CorpusDictionary &corpus_dictionary;
     size_t num_rounds = 5;
     WeightMap weights;
-    FeatureBuilder2 feature_builder;
+    // FeatureBuilder2 feature_builder_old;
+    std::unique_ptr<UnionList> feature_builder;
+
     std::vector<LabeledMove> labeled_move_list;
     size_t num_labeled_moves = 0;
     std::vector<weight_t> scores;
@@ -89,7 +92,8 @@ void TransitionParser<Strategy>::fit(std::vector<Sentence> &sentences) {
 
                 // Compute features for the current state,
                 // and score moves according to current model.
-                feature_builder.build(state, sent, features);
+
+                feature_builder->fill_features(state, sent, features, 0);
                 score_moves(features);
 
                 // Predicted move is the argmax of scores
@@ -114,6 +118,16 @@ void TransitionParser<Strategy>::fit(std::vector<Sentence> &sentences) {
         double correct_pct = 1.0 - (static_cast<double>(num_updates) / static_cast<double>(num_tokens_seen));
         correct_pct *= 100;
         cout << correct_pct << " % correct decisions in round\n";
+
+        /*
+        for (const auto & operand: feature_builder->operands) {
+            cerr << "Rule: " << operand->name << " applied " << operand->n_applications << " times, extracting "
+                << operand->n_features << " features\n";
+            operand->n_applications = 0;
+            operand->n_features = 0;
+        }
+        */
+
     }
 
     finish_learn();
@@ -122,7 +136,7 @@ void TransitionParser<Strategy>::fit(std::vector<Sentence> &sentences) {
 template<typename Strategy>
 void TransitionParser<Strategy>::do_update(vector<FeatureKey> &features, LabeledMove &pred_move, LabeledMove &gold_move) {
     weights.num_updates++;
-    for (auto &feature : features) {
+    for (const auto &feature : features) {
         // Idea: separate update step to a function
         // FIXME: Check that features are unique and do not occur multiple times in the feature vector
         auto section = weights.get_or_insert_section(feature);
@@ -142,12 +156,12 @@ void TransitionParser<Strategy>::do_update(vector<FeatureKey> &features, Labeled
         update_timestamp[gold_move.index] = weights.num_updates;
 
         // Gold
-        w[gold_move.index] += 1;
-        acc_weights[gold_move.index] += 1;
+        w[gold_move.index] += feature.value;
+        acc_weights[gold_move.index] += feature.value;
 
         // Pred
-        w[pred_move.index] -= 1;
-        acc_weights[pred_move.index] -= 1;
+        w[pred_move.index] -= feature.value;
+        acc_weights[pred_move.index] -= feature.value;
     }
 }
 
@@ -181,7 +195,7 @@ ParseResult TransitionParser<Strategy>::parse(const Sentence &sent) {
     auto state = ParseState(sent.tokens.size());
 
     while (!state.is_terminal()) {
-        feature_builder.build(state, sent, features);
+        feature_builder->fill_features(state, sent, features, 0);
         score_moves(features);
         auto allowed_moves = Strategy::allowed_labeled_moves(state);
 
@@ -215,10 +229,11 @@ void TransitionParser<Strategy>::score_moves(std::vector<FeatureKey> &features) 
     std::fill(scores.begin(), scores.end(), 0);
 
     for (FeatureKey &feature : features) {
-        float *w_section = weights.get_or_insert(feature);
+        auto section = weights.get_or_insert_section(feature);
+        auto *w = section.weights();
+
         for (int move_id = 0; move_id < num_labeled_moves; move_id++) {
-            // scores[move_id] += weights.weights_begin(w_section)[move_id];
-            scores[move_id] += w_section[move_id];
+            scores[move_id] += w[move_id];
         }
     }
 }

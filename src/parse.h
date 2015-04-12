@@ -71,9 +71,10 @@ constexpr size_t num_printable_chars = last_printable_char - first_printable_cha
 
 using attribute_vector = std::vector<Attribute>;
 
+// FIXME better name
 struct NamespaceFront {
     namespace_t index = -1;
-    token_index_t token_specific = -1;
+    token_index_t token_specific_ns = -1;
     attribute_vector attributes;
     // std::vector<attribute_vector> edge_attributes {};
     /*
@@ -89,9 +90,11 @@ struct Token {
     std::vector<Attribute> attributes {};
     std::vector<attribute_vector> namespaces {};
     std::vector<NamespaceFront> namespaces_ng {};
+    attribute_vector _empty_attribute_vector {};
     label_type_t label;
     token_index_t index;
     token_index_t head;
+    const attribute_vector & find_namespace(namespace_t ns, namespace_t token_specific_ns = -1) const;
 };
 
 

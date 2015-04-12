@@ -215,22 +215,18 @@ void AttributeExtractor::fill_features(const ParseState &state, const Sentence &
 
 template <typename T>
 void FeatureKey::add_part(T part, size_t start_index) {
-    hash_combine(hashed_val, part);
-    // hash_combine(<#(std::size_t&)seed#>, <#(T const &)v#>)
-    // Assert, somehow, that the object is trivially copyable
-    // cout << "Copying " << sizeof(part) << " at offset " << start_index << "\n";
-    // memcpy(values.data() + start_index, &part, sizeof(part));
-
+    throw std::runtime_error("Deprecated");
+    // hash_combine(hashed_val, part);
 }
 
 template <typename T>
 void FeatureKey::add_part(T part) {
-
+    throw std::runtime_error("Deprecated");
 }
 
-void FeatureKey::add_attribute(Attribute attribute, float val) {
+void FeatureKey::add_attribute(Attribute attribute) {
     hash_combine(hashed_val, attribute.index);
-    value *= val;
+    value *= attribute.value;
 }
 
 
