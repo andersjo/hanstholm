@@ -23,7 +23,7 @@ N0:p ++ N1:p
 
 N0:p ++ N1:p ++ N2:p
 S0:p ++ N0:p ++ N1:p
-S0:head_p ++ S0:p ++ N0:p
-S0:p ++ S0:left_p ++ N0:p
-S0:p ++ S0:right_p ++ N0:p
-S0:p ++ N0:p ++ N0:left_p
+S0_head:p ++ S0:p ++ N0:p
+S0:p ++ S0_left:p ++ N0:p
+S0:p ++ S0_right:p ++ N0:p
+S0:p ++ N0:p ++ N0_left:p
