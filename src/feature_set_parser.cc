@@ -199,9 +199,8 @@ LocationToken::LocationToken(std::string content, CorpusDictionary & dict) : Lex
 
     auto search = state_location::name_to_id.find(location_str);
 
-
     if (search == state_location::name_to_id.end())
-        throw new std::runtime_error("Location '" + location_str + "' not supported. Location names are case sensitive.");
+        throw std::runtime_error("Location '" + location_str + "' not supported. Location names are case sensitive.");
 
     location = search->second;
     ns = dict.map_namespace(ns_str);
