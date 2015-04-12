@@ -1,4 +1,4 @@
-#include <iostream>
+#include <istream>
 #include "learn.h"
 #include "input.h"
 #include "output.h"
