@@ -213,9 +213,8 @@ public:
     }
 
     bool test(LabeledMove lmove) const {
-        return test(lmove.move) && label == lmove.label;
+        return test(lmove.move) && (label == -1 || label == lmove.label);
     }
-    
     
     bool test(Move move) const {
         return moves.test(static_cast<size_t>(move));

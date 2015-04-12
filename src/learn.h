@@ -37,7 +37,7 @@ class TransitionParser {
 public:
     TransitionParser() = default;
 
-    TransitionParser(CorpusDictionary &dict, std::unique_ptr<UnionList> & feature_builder_, size_t num_rounds = 5)
+    TransitionParser(CorpusDictionary &dict, std::unique_ptr<UnionList> &feature_builder_, size_t num_rounds = 5)
             : corpus_dictionary(dict), num_rounds(num_rounds), feature_builder(std::move(feature_builder_)) {
         labeled_move_list = Strategy::moves(corpus_dictionary.label_to_id.size());
         num_labeled_moves = labeled_move_list.size();
@@ -70,6 +70,9 @@ private:
     void do_update(vector<FeatureKey> &features, LabeledMove &pred_move, LabeledMove &gold_move);
 
     void finish_learn();
+
+    LabeledMove & argmax_move(LabeledMoveSet &allowed);
+
 };
 
 
@@ -88,18 +91,17 @@ void TransitionParser<Strategy>::fit(std::vector<Sentence> &sentences) {
 
             while (!state.is_terminal()) {
                 num_tokens_seen++;
-                // Get the best next move according to current parameters.
 
                 // Compute features for the current state,
                 // and score moves according to current model.
-
                 feature_builder->fill_features(state, sent, features, 0);
                 score_moves(features);
 
-                // Predicted move is the argmax of scores
-                LabeledMove pred_move = predict_move();
-                // Gold move is the argmax of the zero-cost
-                LabeledMove gold_move = compute_gold_move(sent, state);
+                // Get the best next move according to current parameters.
+                auto allowed_moves = Strategy::allowed_labeled_moves(state);
+                auto oracle_moves = Strategy::oracle(state, sent);
+                LabeledMove & pred_move = argmax_move(allowed_moves);
+                LabeledMove & gold_move = argmax_move(oracle_moves);
 
                 // If predicted move and gold move are not identical,
                 // update the model with the difference between the
@@ -134,7 +136,8 @@ void TransitionParser<Strategy>::fit(std::vector<Sentence> &sentences) {
 }
 
 template<typename Strategy>
-void TransitionParser<Strategy>::do_update(vector<FeatureKey> &features, LabeledMove &pred_move, LabeledMove &gold_move) {
+void TransitionParser<Strategy>::do_update(vector<FeatureKey> &features, LabeledMove &pred_move,
+                                           LabeledMove &gold_move) {
     weights.num_updates++;
     for (const auto &feature : features) {
         // Idea: separate update step to a function
@@ -199,22 +202,7 @@ ParseResult TransitionParser<Strategy>::parse(const Sentence &sent) {
         score_moves(features);
         auto allowed_moves = Strategy::allowed_labeled_moves(state);
 
-        bool allowed_move_found = false;
-        for (auto lmove: labeled_move_list) {
-            // Convert labeled moves to unlabeled before testing
-            if (!allowed_moves.test(lmove.move)) {
-                scores[lmove.index] = -std::numeric_limits<weight_t>::infinity();
-            } else {
-                allowed_move_found = true;
-            }
-        }
-        assert(allowed_move_found);
-
-
-        LabeledMove pred_move = predict_move();
-//        cout << "Predicted move " << static_cast<int>(pred_move.move) << "\n";
-        // cout << "State N0 is" << state.n0 << "\n";
-        // cout << "Stack size is " << state.stack.size() << "\n";
+        LabeledMove & pred_move = argmax_move(allowed_moves);
         perform_move(pred_move, state, sent.tokens);
 
         features.clear();
@@ -263,4 +251,25 @@ LabeledMove TransitionParser<Strategy>::compute_gold_move(Sentence &sent, ParseS
     return *gold_move_ptr;
 }
 
+
+template<typename Strategy>
+LabeledMove & TransitionParser<Strategy>::argmax_move(LabeledMoveSet &allowed) {
+    weight_t best_val = -std::numeric_limits<weight_t>::infinity();
+
+    size_t best_index = 0;
+
+    for (const auto &move : labeled_move_list) {
+        if (!allowed.test(move)) {
+            scores[move.index] = -std::numeric_limits<weight_t>::infinity();
+        } else if (scores[move.index] >= best_val) {
+            best_index = move.index;
+            best_val = scores[move.index];
+        }
+    }
+
+    return labeled_move_list[best_index];
+}
+
+
 #endif
+
