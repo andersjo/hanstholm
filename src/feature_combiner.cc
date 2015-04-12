@@ -62,11 +62,13 @@ void CartesianProduct::fill_features(const ParseState &state, const Sentence &se
 
 void UnionList::fill_features(const ParseState &state, const Sentence &sent, std::vector<FeatureKey> &features,
                               size_t start_index) {
+    size_t i = 0;
     for (const auto & operand : operands) {
         if (operand->good(state)) {
-            features.push_back(FeatureKey());
+            features.push_back(FeatureKey(i));
             operand->fill_features(state, sent, features, features.size() - 1);
         }
+        i++;
     }
 }
 
