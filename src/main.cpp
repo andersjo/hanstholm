@@ -12,7 +12,7 @@
 
 using namespace std;
 
-void train_test_parser(string data_file, string eval_file, string pred_file, int num_passes) {
+void train_test_parser(string data_file, string eval_file, string pred_file, string template_file, int num_passes) {
     // Read corpus
     auto dict = CorpusDictionary {};
     auto train_sents = VwSentenceReader(data_file, dict).read();
@@ -25,7 +25,7 @@ void train_test_parser(string data_file, string eval_file, string pred_file, int
 
     // auto feature_set = nivre_feature_set(dict);
     // FIXME Find a good to pass ownership
-    auto feature_set = read_feature_file("/users/anders/code/hanstholm/src/nivre.txt", dict);
+    auto feature_set = read_feature_file(template_file, dict);
     cerr << "Using feature definition:\n";
     cerr << feature_set->name << "\n";
 
@@ -129,6 +129,7 @@ int main(int argc, const char* argv[]) {
         string data_file;
         string eval_file;
         string pred_file;
+        string template_file;
         int num_passes = 5;
 
         po::options_description desc("Allowed options");
@@ -136,6 +137,7 @@ int main(int argc, const char* argv[]) {
                 ("help", "produce help message")
                 ("data,d", po::value<std::string>(&data_file)->required(), "input datafile")
                 ("eval,e", po::value<std::string>(&eval_file)->required(), "evaluation file")
+                ("template", po::value<std::string>(&template_file)->required(), "template file (e.g. nivre.txt)")
                 ("passes", po::value<int>(&num_passes), "number of passes over the training set")
                 ("predictions,p", po::value<string>(&pred_file), "write predictions to this file")
                 ("feature_parser", "test feature parser")
@@ -161,7 +163,7 @@ int main(int argc, const char* argv[]) {
             po::notify(vm);
 
             // Find better way to pass parameters into the program
-            train_test_parser(data_file, eval_file, pred_file, num_passes);
+            train_test_parser(data_file, eval_file, pred_file, template_file, num_passes);
         }
 
 
