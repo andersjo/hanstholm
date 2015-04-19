@@ -237,7 +237,7 @@ LabeledMove TransitionParser<Strategy>::compute_gold_move(Sentence &sent, ParseS
     LabeledMoveSet zero_cost_labeled_moves = Strategy::oracle(state, sent);
 
     // FIXME find lowest number possible
-    weight_t best_score = -1E7;
+    weight_t best_score = -std::numeric_limits<weight_t>::infinity();
     LabeledMove *gold_move_ptr = nullptr;
     for (int i = 0; i < num_labeled_moves; i++) {
         auto &current = labeled_move_list[i];
@@ -255,13 +255,10 @@ LabeledMove TransitionParser<Strategy>::compute_gold_move(Sentence &sent, ParseS
 template<typename Strategy>
 LabeledMove & TransitionParser<Strategy>::argmax_move(LabeledMoveSet &allowed) {
     weight_t best_val = -std::numeric_limits<weight_t>::infinity();
-
     size_t best_index = 0;
 
     for (const auto &move : labeled_move_list) {
-        if (!allowed.test(move)) {
-            scores[move.index] = -std::numeric_limits<weight_t>::infinity();
-        } else if (scores[move.index] >= best_val) {
+        if (allowed.test(move) && scores[move.index] >= best_val) {
             best_index = move.index;
             best_val = scores[move.index];
         }
