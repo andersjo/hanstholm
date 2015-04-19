@@ -30,11 +30,10 @@ void Location::fill_features(const ParseState &state, const Sentence &sent, std:
 
     auto it_pair = find_attributes(state, sent);
     if (it_pair.first != it_pair.second) {
-        auto it = it_pair.first;
-
+        // Loop over the existing features. We are guaranteed to have at least one feature.
         for (size_t i = start_index; i < initial_vector_size; i++) {
-            // Skip the first element. We'll get back to it at the end of the loop.
-            it++;
+            // Skip the first attribute. We'll get back to it at the end of the loop.
+            auto it = std::next(it_pair.first);
             for (; it != it_pair.second; it++) {
                 // Insert new features for the 1..n attributes in the namespace.
                 // These end up at indices beyond `initial_vector_size`, so we won't see them again in this loop.
