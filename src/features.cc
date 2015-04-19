@@ -303,7 +303,7 @@ WeightSection & WeightMap::get(FeatureKey key) {
 */
 
 WeightMap::WeightMap(size_t section_size_)
-        : table_block(4194304, section_size_ * WeightSectionWrap::num_blocks), section_size(section_size_)  {
+        : table_block(8388608, section_size_ * WeightSectionWrap::num_blocks), section_size(section_size_)  {
 }
 
 void ProductCombiner::fill_features(const ParseState &state, const Sentence &sent, std::vector<FeatureKey> &features, size_t start_index) {
