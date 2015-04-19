@@ -123,11 +123,11 @@ weight_t VwSentenceReader::get_number_or_default(string::const_iterator str_pos,
     // We do this the C-way to avoid making temporary strings for std::stof.
     // Premature optimization?
     weight_t val;
-    char *last_char_converted = nullptr;
-    val = strtof(&(*colon_pos) + 1, &last_char_converted);
-    if (last_char_converted != (&(*str_pos) - 1) || errno != 0) {
-        // Warn, or be silent?
-        cout << "Conversion failed. Falling back to default value (1.0): " << string(colon_pos + 1, str_pos) << "\n";
+    char *next_char = nullptr;
+    val = strtof(&(*colon_pos) + 1, &next_char);
+//    cerr << "Read val of " << val << "\n";
+    if (next_char != &(*str_pos) || errno != 0) {
+        cerr << "Conversion failed. Falling back to default value (1.0): " << string(colon_pos + 1, str_pos) << "\n";
         val = 1;
     }
     return val;
