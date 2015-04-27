@@ -2,7 +2,7 @@
 
 #include <fstream>
 #include <sstream> // stringstream
-
+#include <algorithm>
 
 using namespace std;
 
