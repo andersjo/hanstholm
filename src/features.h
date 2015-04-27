@@ -11,8 +11,6 @@
 #include "hash.h"
 #include "hashtable.h"
 
-#include <Eigen/Dense>
-
 struct FeatureKey {
     size_t hashed_val = 0;
     // short feature_template_index;
