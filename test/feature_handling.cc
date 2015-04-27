@@ -4,9 +4,9 @@
 
 #include "catch.h"
 
-#include <features.h>
-#include <feature_set_parser.h>
-#include <input.h>
+#include "features.h"
+#include "feature_set_parser.h"
+#include "input.h"
 
 TEST_CASE( "features are combined" ) {
     auto dict = CorpusDictionary();
