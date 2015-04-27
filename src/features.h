@@ -7,7 +7,7 @@
 #include <vector>
 #include <unordered_map>
 
-#include "parse.h"
+#include "feature_handling.h"
 #include "hash.h"
 #include "hashtable.h"
 

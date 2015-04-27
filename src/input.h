@@ -10,7 +10,7 @@
 #define rungsted_parser_input_h
 
 #include <regex>
-#include "parse.h"
+#include "feature_handling.h"
 
 class VwSentenceReader {
 public:

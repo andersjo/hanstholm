@@ -1,0 +1,7 @@
+-1-root 'en.gweb_emails.dev.conll-25-1|w Call |p VERB:0.6 NOUN:0.4
+0-dobj 'en.gweb_emails.dev.conll-25-2|w me |p PRON:0.928591 NOUN:0.063753
+4-mark 'en.gweb_emails.dev.conll-25-3|w if |p ADP:0.998071
+4-nsubj 'en.gweb_emails.dev.conll-25-4|w you |p PRON:0.999277
+0-advcl 'en.gweb_emails.dev.conll-25-5|w 're |p VERB:0.985059
+4-acomp 'en.gweb_emails.dev.conll-25-6|w interested |p ADJ:0.921579 VERB:0.069913
+0-punct 'en.gweb_emails.dev.conll-25-7|w . |p .:0.999869

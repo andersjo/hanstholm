@@ -48,6 +48,7 @@ struct Location : FeatureCombinerBase {
     virtual bool good(const ParseState &state) const override;
 };
 
+
 struct UnionList : FeatureCombinerBase {
     UnionList(std::list<feature_combiner_uptr> &operands_)
             : FeatureCombinerBase(""), operands(std::move(operands_)) {

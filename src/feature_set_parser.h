@@ -2,7 +2,7 @@
 // N0:p + f(S0:p, x)
 // head ( N0 ) :p
 
-#include "parse.h"
+#include "feature_handling.h"
 #include <memory>
 #include "feature_combiner.h"
 
@@ -68,4 +68,5 @@ struct FunctionToken : LexToken {
 std::vector<lex_token_uptr> tokenize_line(std::string line, CorpusDictionary & dict);
 std::vector<lex_token_uptr> infix_to_prefix(std::vector<lex_token_uptr > & infix_tokens);
 feature_combiner_uptr make_feature_combiner(std::vector<lex_token_uptr> & prefix_tokens);
+feature_combiner_uptr parse_feature_line(std::string line, CorpusDictionary & dict);
 std::unique_ptr<UnionList> read_feature_file(std::string filename, CorpusDictionary & dict);

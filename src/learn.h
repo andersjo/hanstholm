@@ -6,7 +6,7 @@
 #ifndef rungsted_parser_learn_h
 #define rungsted_parser_learn_h
 
-#include "parse.h"
+#include "feature_handling.h"
 #include "features.h"
 #include "feature_combiner.h"
 #include <vector>

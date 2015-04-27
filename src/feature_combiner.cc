@@ -1,5 +1,5 @@
 #include <utility>
-#include "parse.h"
+#include "feature_handling.h"
 #include "feature_combiner.h"
 
 
@@ -64,6 +64,7 @@ void UnionList::fill_features(const ParseState &state, const Sentence &sent, std
     size_t i = 0;
     for (const auto & operand : operands) {
         if (operand->good(state)) {
+            // FIXME Get way to abort feature generation if empty namespaces
             features.push_back(FeatureKey(i));
             operand->fill_features(state, sent, features, features.size() - 1);
         }

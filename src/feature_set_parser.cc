@@ -230,6 +230,13 @@ feature_combiner_uptr FunctionToken::apply(feature_combiner_uptr arg1, feature_c
 
 }
 
+feature_combiner_uptr parse_feature_line(std::string line, CorpusDictionary & dict) {
+    auto infix_tokens = tokenize_line(line, dict);
+    auto prefix_tokens = infix_to_prefix(infix_tokens);
+    return make_feature_combiner(prefix_tokens);
+}
+
+
 std::unique_ptr<UnionList> read_feature_file(std::string filename, CorpusDictionary & dict) {
     std::ifstream infile(filename);
     if (!infile.good())

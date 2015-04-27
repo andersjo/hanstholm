@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 2.8.4)
-project(hanstholm)
+project(HANSTHOLM)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -O0")
 
 set(SOURCE_FILES src/main.cpp src/features.cc
     src/input.cc src/learn.cc src/parse.cc
@@ -12,6 +12,12 @@ set(SOURCE_FILES src/main.cpp src/features.cc
     src/feature_set_parser.cc
     src/feature_combiner.cc
     )
+
+# Build library as advised by
+# http://stackoverflow.com/questions/14446495/cmake-project-structure-with-unit-tests
+add_library (libhanstholm ${SOURCE_FILES})
+
+option(HANSTHOLM_BUILD_TESTS "Build Hanstholm tests" ON)
 
 # set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
 
@@ -26,5 +32,9 @@ if(Boost_FOUND)
   include_directories(${Boost_INCLUDE_DIRS})
   add_executable(hanstholm ${SOURCE_FILES})
   message("Boost_LIBRARIES is ${Boost_LIBRARIES}")
-  target_link_libraries(hanstholm ${Boost_LIBRARIES})
+  target_link_libraries(hanstholm ${Boost_LIBRARIES} libhanstholm)
+endif()
+
+if(HANSTHOLM_BUILD_TESTS)
+    add_subdirectory(test)
 endif()
