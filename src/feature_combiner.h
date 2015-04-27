@@ -38,14 +38,14 @@ struct Location : FeatureCombinerBase {
     state_location::LocationName location;
     namespace_t ns;
     token_index_t token_specific_ns = -1;
-    virtual std::pair<attribute_list_citerator, attribute_list_citerator>
+    std::pair<attribute_list_citerator, attribute_list_citerator>
             find_attributes(const ParseState &state, const Sentence &sent) const override;
 
-    virtual void fill_features(const ParseState &state, const Sentence &sent, std::vector<FeatureKey> &features,
+    void fill_features(const ParseState &state, const Sentence &sent, std::vector<FeatureKey> &features,
                                size_t start_index) override;
 
 
-    virtual bool good(const ParseState &state) const override;
+    bool good(const ParseState &state) const override;
 };
 
 
@@ -64,7 +64,7 @@ struct UnionList : FeatureCombinerBase {
     std::list<feature_combiner_uptr > operands;
 
 
-    virtual void fill_features(const ParseState &state, const Sentence &sent, std::vector<FeatureKey> &features,
+    void fill_features(const ParseState &state, const Sentence &sent, std::vector<FeatureKey> &features,
                                size_t start_index) override;
 };
 
@@ -83,10 +83,10 @@ struct CartesianProduct : BinaryCombiner {
             : BinaryCombiner(name, std::move(lhs_), std::move(rhs_)) {
     }
 
-    virtual void fill_features(const ParseState &state, const Sentence &sent, std::vector<FeatureKey> &features,
+    void fill_features(const ParseState &state, const Sentence &sent, std::vector<FeatureKey> &features,
                                size_t start_index) override;
 
-    virtual bool good(const ParseState &state) const override;
+    bool good(const ParseState &state) const override;
 };
 
 struct Union : BinaryCombiner {
