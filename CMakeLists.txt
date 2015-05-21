@@ -17,7 +17,7 @@ set(SOURCE_FILES src/features.cc
 # http://stackoverflow.com/questions/14446495/cmake-project-structure-with-unit-tests
 add_library (libhanstholm ${SOURCE_FILES})
 
-option(HANSTHOLM_BUILD_TESTS "Build Hanstholm tests" ON)
+option(HANSTHOLM_BUILD_TESTS "Build Hanstholm tests" OFF)
 
 # set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
 
