@@ -3,7 +3,9 @@
 
 ## Building
 
-Checkout the project. In the top-level directory, issue:
+Building hanstholm requires as working installation of  [CMAKE](http://www.cmake.org/) and [the Boost library](http://www.boost.org/).
+
+Once the requirements are installed, checkout the project. In the top-level directory, issue:
 
 ```
 mkdir build
