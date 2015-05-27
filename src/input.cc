@@ -33,8 +33,7 @@ void VwSentenceReader::parse_instance(string::const_iterator instance_begin, str
         parse_body(first_bar_pos, instance_end);
         sent.tokens.push_back(token);
     } else {
-        error_pos = &instance_begin;
-        throw std::runtime_error("Bar '|' not found");
+        throw input_parse_error("Bar '|' not found", 0);
     }
 }
 
@@ -50,8 +49,7 @@ void VwSentenceReader::parse_header(string::const_iterator header_begin, string:
         token.label = dictionary.map_label(header_match[2].str());
         token.id = header_match[3].str();
     } else {
-        error_pos = &header_begin;
-        throw std::runtime_error("Ill-formatted header");
+        throw input_parse_error("Ill-formatted header", 0);
     }
 }
 
@@ -143,19 +141,26 @@ vector<Sentence> VwSentenceReader::read() {
     line_no = 1;
 
     string line;
-    while (std::getline(infile, line)) {
-        if (line.size() == 0) {
-            finish_sentence();
-        } else {
-            // End line with a blank character
-            line.push_back(' ');
-            parse_instance(line.cbegin(), line.cend());
+    try {
+        while (std::getline(infile, line)) {
+            if (line.size() == 0 && sent.tokens.size() > 0) {
+                finish_sentence();
+            } else {
+                // End line with a blank character
+                line.push_back(' ');
+                parse_instance(line.cbegin(), line.cend());
+            }
+            line_no++;
         }
-        line_no++;
-    }
 
-    if (sent.tokens.size() > 0)
-        finish_sentence();
+        if (sent.tokens.size() > 0)
+            finish_sentence();
+
+    } catch (input_parse_error e) {
+        e.line_no = line_no;
+        e.filename = filename;
+        throw e;
+    }
 
     return corpus;
 
@@ -181,8 +186,22 @@ void VwSentenceReader::finish_sentence() {
 
     root_token.head = -1;
 
+    // Check sentence consistency
+    assert(sent.tokens.size() >= 2);
+
     // Add finished sentence to corpus
     corpus.push_back(sent);
     sent = Sentence();
 }
 
+const char *input_parse_error::what() const noexcept {
+    std::string msg;
+    msg.append("Input error in file ");
+    msg.append(filename);
+    msg.append(" on line ");
+    msg.append(to_string(line_no));
+    msg.append(": ");
+    msg.append(message);
+
+    return msg.c_str();
+}

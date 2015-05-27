@@ -29,6 +29,7 @@ private:
     std::string filename;
     std::vector<Sentence> corpus;
     size_t line_no;
+    size_t error_line_pos;
     Sentence sent {};
     Token token {};
     
@@ -43,4 +44,25 @@ private:
     void parse_feature_decl(std::string::const_iterator start_of_token, std::string::const_iterator str_pos);
 };
 
+class input_parse_error : public std::exception {
+public:
+    input_parse_error(std::string message, size_t pos_on_line) : message(message), pos_on_line(pos_on_line) {}
+    size_t line_no;
+    std::string message;
+    size_t pos_on_line;
+    std::string filename;
+    virtual const char* what() const noexcept override;
+
+private:
+//    std::string filename;
+//    std::string line;
+
+
+
+
+
+};
+
+
 #endif
+
