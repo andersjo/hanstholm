@@ -59,9 +59,7 @@ std::unordered_map<Value, Key> invert_map(std::unordered_map<Key, Value> & orig_
 struct Attribute {
     size_t index;
     weight_t value;
-    namespace_t ns;
     Attribute(size_t index, weight_t value) : index(index), value(value) {};
-    Attribute(size_t index, weight_t value, uint8_t ns) : index(index), value(value), ns(ns) {};
 };
 
 // Printable characters are in the range 32 - 126, both inclusive
