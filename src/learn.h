@@ -255,14 +255,16 @@ LabeledMove TransitionParser<Strategy>::compute_gold_move(Sentence &sent, ParseS
 template<typename Strategy>
 LabeledMove & TransitionParser<Strategy>::argmax_move(LabeledMoveSet &allowed) {
     weight_t best_val = -std::numeric_limits<weight_t>::infinity();
-    size_t best_index = 0;
+    int best_index = -1;
 
     for (const auto &move : labeled_move_list) {
         if (allowed.test(move) && scores[move.index] >= best_val) {
-            best_index = move.index;
+            best_index = static_cast<int>(move.index);
             best_val = scores[move.index];
         }
     }
+
+    assert(best_index > -1);
 
     return labeled_move_list[best_index];
 }
