@@ -11,6 +11,7 @@ set(SOURCE_FILES src/features.cc
     src/output.cc src/output.cc
     src/feature_set_parser.cc
     src/feature_combiner.cc
+    src/feature_handling.h
     )
 
 # Build library as advised by
