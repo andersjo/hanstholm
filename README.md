@@ -60,7 +60,8 @@ In Hanstholm, the features are specified in a plain-text template file. Each lin
 ```
 S0:w ++ S0:p
 ```
-is a conjuction of the primitives `S0:w` and `S0:p`, i.e. each distinct combination of **w**ord and **p**art-of-speech tags for the token at the top of the stack (position S0) is a separate parameter in the model. The numeric value of the feature conjunction is the product of the feature primitives. 
+
+is a conjumction of the primitives `S0:w` and `S0:p`, with `++` being the conjunction operator. I.e. each distinct combination of **w**ord and **p**art-of-speech tags for the token at the top of the stack (position `S0`) becomes a separate parameter in the model. The numeric value of the feature conjunction is the product of the feature primitives. 
 
 Note that the names `w` and `p` have no special meaning; they simply refer to the namespaces of the input file. In general, a namespace may contain more than one feature. For instance, a part-of-speech namespace could include the top-*k* tags, weighted by their probability. Another use-case is word embeddings, which have multiple dimensions. In those cases, the feature template expands to the Cartesian product of the namespaces. Concretely, assume that the token represented by the input line below is in the `S0` position.
 
