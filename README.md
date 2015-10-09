@@ -53,36 +53,23 @@ No value is given to the features in the example, so they assume the default of 
 
 ## Feature specification 
 
-Again, we go by example. 
+Transition-based parsing has a classification problem at its core, which is to decide which transition to perform next. During parsing, features are extracted based on the current configuration of the stack **S** and buffer **N**, and the resulting feature vector is scored by taking the dot product with a weight vector. 
+
+In Hanstholm, the features are specified in a plain-text template file. Each line in the file describes a single feature, which may be a conjunction of several *feature primitives*. Again, we go by example. The line,
 
 ```
 S0:w ++ S0:p
-S0:w ++ S0:p
-S0:w
-S0:p
-N0:w ++ N0:p
-N0:w
-N0:p
-N1:w ++ N1:p
-N1:w
-N1:p
-N2:w ++ N2:p
-N2:w
-N2:p
+```
+is a conjuction of the primitives `S0:w` and `S0:p`, i.e. each distinct combination of **w**ord and **p**art-of-speech tags for the token at the top of the stack (position S0) is a separate parameter in the model. The numeric value of the feature conjunction is the product of the feature primitives. 
 
-S0:w ++ S0:p ++ N0:w ++ N0:p
-S0:w ++ S0:p ++ N0:w
-S0:w ++ N0:w ++ N0:p
-S0:w ++ S0:p ++ N0:p
-S0:p ++ N0:w ++ N0:p
-S0:w ++ N0:w
-S0:p ++ N0:p
-N0:p ++ N1:p
+Note that the names `w` and `p` have no special meaning; they simply refer to the namespaces of the input file. In general, a namespace may contain more than one feature. For instance, a part-of-speech namespace could include the top-*k* tags, weighted by their probability. Another use-case is word embeddings, which have multiple dimensions. In those cases, the feature template expands to the Cartesian product of the namespaces. Concretely, assume that the token represented by the input line below is in the `S0` position.
 
-N0:p ++ N1:p ++ N2:p
-S0:p ++ N0:p ++ N1:p
-S0_head:p ++ S0:p ++ N0:p
-S0:p ++ S0_left:p ++ N0:p
-S0:p ++ S0_right:p ++ N0:p
-S0:p ++ N0:p ++ N0_left:p
+```
+|w tail |p NOUN:0.7 VERB:0.3
+```
+
+Then the `S0:w ++ S0:p` conjunction feature template would generate the following two features:
+
+```
+tail+NOUN:0.7 tail+VERB:0.3
 ```
