@@ -13,8 +13,6 @@
 
 struct FeatureKey {
     size_t hashed_val = 0;
-    // short feature_template_index;
-    // std::array<char, 16> values {};
 
     template <typename T>
     void add_part(T, size_t);
@@ -75,32 +73,6 @@ private:
     AttributeExtractor rhs;
 };
 
-// rhs.fill_features();
-
-
-// auto what = ProductCombiner(2.0, 5.0);
-
-
-/*
-namespace std {
-    template <> struct hash<FeatureKey>
-    {
-        size_t operator()(const FeatureKey & f) const {
-            std::size_t seed = 0;
-            hash_range(seed, f.values.cbegin(), f.values.cend());
-            hash_combine(seed, f.feature_template_index);
-            return seed;
-        }
-    };
-
-}
-*/
-class FeatureBuilder2 {
-public:
-    std::vector<combined_feature_t> feature_set;
-    void build(ParseState &, const Sentence &, std::vector<FeatureKey> &);
-    FeatureBuilder2(std::vector<combined_feature_t>);
-};
 
 struct WeightSection {
     std::vector<weight_t> weights;
@@ -110,17 +82,6 @@ struct WeightSection {
         cumulative.resize(section_size);
     }
 };
-
-/*
-class WeightSection {
-    WeightSection(size_t aligned_section_size, float * base_ptr) {
-
-    }
-    float * base_ptr;
-
-};
-*/
-
 
 
 struct HashCell {
@@ -153,8 +114,6 @@ public:
     std::vector<size_t> all_keys();
     WeightSectionWrap get_or_insert_section(FeatureKey);
     WeightSectionWrap get_section(size_t);
-    // std::unordered_map<FeatureKey, WeightSection> weights;
-    // HashTable<HashCell> table { 262144 };
     HashTableBlock table_block;
     size_t num_updates = 0;
 

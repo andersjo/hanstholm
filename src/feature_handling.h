@@ -159,7 +159,6 @@ struct ParseState {
     ParseState(size_t length);
 	void add_edge(token_index_t head, token_index_t dep, label_type_t label);
     
-    const state_location_t locations() const;
     void update_locations();
     
     int find_left_dep(token_index_t middle, token_index_t start) const;
@@ -170,8 +169,6 @@ struct ParseState {
     bool has_dep_in_buffer(token_index_t, const Sentence &) const;
     bool has_dep_in_stack(token_index_t, const Sentence &) const;
 
-    // items_remaining() is deprecated in favor of is_terminal()
-    bool items_remaining();
     bool is_terminal();
 };
 

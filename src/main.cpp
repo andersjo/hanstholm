@@ -23,7 +23,6 @@ void train_test_parser(string data_file, string eval_file, string pred_file, str
 
     cerr << "Using " << num_passes << " passes\n";
 
-    // auto feature_set = nivre_feature_set(dict);
     // FIXME Find a good to pass ownership
     auto feature_set = read_feature_file(template_file, dict);
     cerr << "Using feature definition:\n";
@@ -177,12 +176,6 @@ int main(int argc, const char* argv[]) {
     catch(...) {
         cerr << "Exception of unknown type!\n";
     }
-
-
-
-    // test_hashtable_block();
-    // train_test_parser();
-    // test_feature_set_parser();
 
     return 0;
 }
