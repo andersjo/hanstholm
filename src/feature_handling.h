@@ -239,11 +239,18 @@ public:
 
 void perform_move(LabeledMove move, ParseState &state, const std::vector<Token> &tokens);
 
-struct ArcEager {
+struct TransitionSystem {
+    virtual LabeledMoveSet oracle(const ParseState & state, const Sentence & sent) = 0;
+    virtual std::vector<LabeledMove> moves(size_t num_labels) = 0;
+    virtual LabeledMoveSet allowed_labeled_moves(const ParseState & state) = 0;
+
+};
+
+struct ArcEager : TransitionSystem {
     using ParseState = ::ParseState;
-    static LabeledMoveSet oracle(const ParseState & state, const Sentence & sent);
-    static std::vector<LabeledMove> moves(size_t num_labels);
-    static LabeledMoveSet allowed_labeled_moves(const ParseState & state);
+    LabeledMoveSet oracle(const ParseState & state, const Sentence & sent) override;
+    std::vector<LabeledMove> moves(size_t num_labels) override;
+    LabeledMoveSet allowed_labeled_moves(const ParseState & state) override;
 };
 
 #endif

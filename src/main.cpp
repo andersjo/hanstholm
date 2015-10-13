@@ -29,7 +29,9 @@ void train_test_parser(string data_file, string eval_file, string pred_file, str
     cerr << "Using feature definition:\n";
     cerr << feature_set->name << "\n";
 
-    auto parser = TransitionParser<ArcEager>(dict, feature_set, num_passes);
+
+    auto strategy = ArcEager();
+    auto parser = TransitionParser(dict, feature_set, strategy, num_passes);
     parser.fit(train_sents);
 
     ParseResult parsed_sentence;
