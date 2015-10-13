@@ -24,7 +24,7 @@ option(HANSTHOLM_BUILD_TESTS "Build Hanstholm tests" OFF)
 
 
 # set(Boost_USE_MULTI_THREADED OFF)
-#include_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
 set(BOOST_LIBRARYDIR "${BOOST_ROOT}/lib")
 
 find_package(Boost 1.36.0 REQUIRED system program_options)
