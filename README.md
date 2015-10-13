@@ -1,3 +1,6 @@
+<img src="https://travis-ci.org/andersjo/hanstholm.svg?branch=master"/>
+
+
 # Hanstholm - dependency parser with an open feature model
 
 
