@@ -19,8 +19,6 @@ AttributeExtractor::extract(const ParseState &state, const Sentence &sent) const
         // cout << "Token index beyond sentence size. Location: " << location << " pointing to content index: " << token_index << endl;
     }
 
-    // assert(token_index <= static_cast<int>(sent.tokens.size()));
-
     // Token index should be inside the sentence.
     // It may outside the sentence when the location is not defined (value = -1)
     // or when N0 is pushed beyond the last content.
@@ -41,32 +39,6 @@ AttributeExtractor::extract(const ParseState &state, const Sentence &sent) const
 
     return make_pair(_empty_attribute_vector.cend(), _empty_attribute_vector.cend());
 
-    /*
-    if (token_index >= 0 && token_index < sent.tokens.size()) {
-        auto & token = sent.tokens[token_index];
-
-        attribute_list_citerator it_begin = token.attributes.cbegin();
-        attribute_list_citerator it_end = token.attributes.cend();
-
-        // Go forward as long as
-        // 1) we are not at the end; and
-        // 2) we are not in the right namespace
-        while (it_begin != it_end && it_begin->ns != ns) {
-            it_begin++;
-        }
-        
-
-        // Go backwards as long as
-        // 1) we haven't reached the beginning; and
-        // 2) we are not in the right namespace
-        while (it_begin != it_end && (it_end - 1)->ns != ns)
-            it_end--;
-        
-        return make_pair(it_begin, it_end);
-    }
-    
-    return make_pair(_empty_attribute_vector.cend(), _empty_attribute_vector.cend());
-    */
 };
 
 void AttributeExtractor::fill_features(const ParseState &state, const Sentence &sent, std::vector<FeatureKey> &features, size_t start_index) {
@@ -150,34 +122,6 @@ WeightSectionWrap WeightMap::get_section(size_t key) {
     else
         return WeightSectionWrap(val_ptr, section_size);
 }
-
-
-/*
-WeightSection & WeightMap::get(FeatureKey key) {
-    //std::hash<FeatureKey> hash_fn;
-    //size_t id_hash = hash_fn(key);
-
-
-    HashCell * cell_ptr = table.Lookup(key.hashed_val);
-    if (cell_ptr == nullptr) {
-        cell_ptr = table.Insert(key.hashed_val);
-        cell_ptr->value = new WeightSection(section_size);
-    }
-
-    // Safe to dereference this pointer?
-    assert(cell_ptr->value != nullptr);
-    return *cell_ptr->value;
-
-//    auto & section = weights[key];
-//    // Check if section is new
-//    if (section.weights.size() != section_size) {
-//        section.weights.resize(section_size);
-//        section.cumulative.resize(section_size);
-//    }
-//
-//    return section;
-}
-*/
 
 WeightMap::WeightMap(size_t section_size_)
         : table_block(8388608, section_size_ * WeightSectionWrap::num_blocks), section_size(section_size_)  {

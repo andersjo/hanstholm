@@ -1,4 +1,5 @@
 #include "features.h"
+#include "feature_handling.h"
 
 #include <fstream>
 #include <sstream> // stringstream
@@ -68,7 +69,7 @@ LabeledMoveSet ArcEager::oracle(const ParseState & state, const Sentence & sent)
     auto & tokens = sent.tokens;
     auto n0 = state.n0;
     
-    LabeledMoveSet moves = allowed_labeled_moves(state);
+    LabeledMoveSet moves = allowed_labeled_moves(state, sent);
     
     if (stack.size() == 0)
         return moves;
@@ -132,7 +133,7 @@ LabeledMoveSet ArcEager::oracle(const ParseState & state, const Sentence & sent)
     // return all the allowed moves as possibilities
     // TODO check if zero-cost moves are guaranteed to exist
     if (!(moves.test(Move::SHIFT) || moves.test(Move::REDUCE) || moves.test(Move::LEFT_ARC) || moves.test(Move::RIGHT_ARC)))
-        return allowed_labeled_moves(state);
+        return allowed_labeled_moves(state, sent);
 
 
     return moves;
@@ -159,7 +160,7 @@ vector<LabeledMove> ArcEager::moves(size_t num_labels) {
     return labeled_moves;
 }
 
-LabeledMoveSet ArcEager::allowed_labeled_moves(const ParseState &state) {
+LabeledMoveSet ArcEager::allowed_labeled_moves(const ParseState &state, const Sentence & sent) {
     // This method only gives valid answers when the current state is non-terminal.
     // Specifically, it assumes that return value of `state.is_terminal` is false.
     LabeledMoveSet moves {};
@@ -236,6 +237,7 @@ int ParseState::find_left_dep(int middle, int start) const {
     return -1;
 }
 
+
 int ParseState::find_right_dep(int middle, int last) const {
     for (int i = last; i > middle; i--) {
         if (heads[i] == middle) return i;
@@ -259,6 +261,7 @@ void ParseState::update_locations() {
         if (locations_[S0_left] != -1)
             locations_[S0_left2] = find_left_dep(locations_[S0], locations_[S0_left] + 1);
 
+
         locations_[S0_right] = find_right_dep(locations_[S0], static_cast<int>(length - 1));
         if (locations_[S0_right] != -1)
             locations_[S0_right2] = find_right_dep(locations_[S0], locations_[S0_right] - 1);
@@ -268,6 +271,8 @@ void ParseState::update_locations() {
     locations_[N0_left] = find_left_dep(locations_[N0], 0);
     if (locations_[N0_left] != -1)
         locations_[N0_left2] = find_left_dep(locations_[N0], locations_[N0_left] + 1);
+
+    locations_[N0_right] = find_right_dep(locations_[N0], static_cast<int>(length - 1));
 
     if (locations_[N0] < (length - 1))
         locations_[N1] = locations_[N0] + 1;
@@ -342,4 +347,202 @@ const attribute_vector &Token::find_namespace(namespace_t ns, namespace_t token_
     } else {
         return _empty_attribute_vector;
     }
+}
+
+
+void enforce_arc_constraints(const ParseState &state, const Sentence &sent, LabeledMoveSet &allowed_moves) {
+    // Check arc constraints
+    const auto s0 = state.stack.back();
+    const auto n0 = state.n0;
+
+    for (const auto & ac : sent.arc_constraints) {
+        // LEFT-ARC (S|i, j|B): adds (j, i), pops i from S
+        // Makes any edge (x, i) and (i, x) unreachable, where x is in B
+        if ((ac.head == s0 && ac.dep > n0) || (ac.dep == s0 && ac.head > n0))
+            allowed_moves.set(Move::LEFT_ARC, false);
+
+        // RIGHT-ARC (S|i, j|B): adds (i, j), pushes j on S
+        // Makes any edge (j, x) and (x, j) unreachable, where x is in S
+        if (ac.head == n0 || ac.dep == n0) {
+            // Exclude top of the stack
+            for (auto si = state.stack.cbegin(); si != state.stack.cend() - 1; si++) {
+                if (ac.head == *si || ac.dep == *si) {
+                    allowed_moves.set(Move::RIGHT_ARC, false);
+                    continue;
+                }
+            }
+        }
+
+        // REDUCE (S|i, j|B): pops i from S
+        // Makes any edge (x, i) and (i, x) unreachable, where x is in B
+        if ((ac.head == s0 && ac.dep >= n0) || (ac.dep == s0 && ac.head >= n0))
+            allowed_moves.set(Move::REDUCE, false);
+
+        // SHIFT (S, j|B): pushes j onto S
+        // Makes any edge (j, x) and (x, j) unreachable, where x is in S
+        if (ac.head == n0 || ac.dep == n0) {
+            for (auto si = state.stack.cbegin(); si != state.stack.cend(); si++) {
+                if (ac.head == *si || ac.dep == *si) {
+                    allowed_moves.set(Move::SHIFT, false);
+                    continue;
+                }
+            }
+        }
+    }
+}
+
+void enforce_span_constraints(const ParseState &state, const Sentence &sent, LabeledMoveSet &allowed_moves) {
+    const auto s0 = state.stack.back();
+    const auto n0 = state.n0;
+
+    for (const auto & sc : sent.span_constraints) {
+        const bool s0_inside = sc.is_inside(s0);
+        const bool n0_inside = sc.is_inside(n0);
+        if (!(s0_inside || n0_inside))
+            continue;
+        
+        const bool n0_is_root = n0_inside && sc.is_n0_root(state);
+        const bool s0_is_root = s0_inside && sc.is_s0_root(state);
+        const bool has_root = n0_is_root || s0_is_root || sc.has_root(state);
+        assert(!(s0_is_root && n0_is_root));
+
+        bool no_left_arc = false;
+        bool no_right_arc = false;
+        bool no_shift = false;
+        bool no_reduce = false;
+
+        //
+        // LEFT-ARC (S|i, j|B): adds (j, i), pops i from S
+        //
+
+        // S0 is span root, but we are trying to make it a dependent of N0
+        no_left_arc &= s0_is_root && n0_inside;
+
+        // S0 is not the span root, but we are trying to make it the dependent of something outside of the span
+        no_left_arc &= has_root && !s0_is_root && !n0_inside;
+
+        // We're trying to make N0 the head of something outside the span, but it is not the root
+        no_left_arc &= sc.permit_root_deps && n0_inside && !s0_inside && has_root && !n0_is_root;
+
+        // We're trying to make N0 the head of a node outside the span, but we don't allow outside dependencies
+        no_left_arc &= !sc.permit_root_deps && n0_inside && !s0_inside;
+
+        //
+        // RIGHT-ARC (S|i, j|B): adds (i, j), pushes j on S
+        //
+
+        // We can only add an edge from S0 to outside the span if S0 is the root,
+        // and no span nodes remain on the stack.
+        if (sc.span_end == s0) {
+            no_right_arc = no_right_arc && !s0_is_root;
+
+            if (state.stack.size() > 1) {
+                const auto s1 = *(state.stack.cend() - 2);
+                no_right_arc = no_right_arc && (sc.span_start <= s1 <= sc.span_end);
+            }
+        }
+
+        // We're trying to make S0 head of N0, but N0 is span root.
+        no_right_arc = no_right_arc && n0_is_root && s0_inside;
+
+        // Although N0 is not span root, we're trying to make it a dependent of something outside the span
+        no_right_arc = no_right_arc && !n0_is_root && !s0_inside;
+
+        // We're giving S0 a dependent outside the span, but that's not allowed
+        no_right_arc = no_right_arc && !sc.permit_root_deps && !n0_inside;
+
+        // We're giving S0 a dependent outside the span, but S0 is not the root
+        no_right_arc = no_right_arc && sc.permit_root_deps && !s0_is_root;
+
+        //
+        // REDUCE (S|i, j|B): pops i from S
+        //
+
+        // We're about to lose S0, but it's the root of the span, and there's
+        // no way N0 can be a descendant of S0 already
+        no_reduce = s0_inside && n0_inside && s0_is_root;
+
+        //
+        // SHIFT (S, j|B): pushes j onto S
+        //
+
+        // We're pushing the last token in the span to the stack, making
+        // it unavailable for further attachments inside the span.
+        // The span must therefore have no unfinished nodes.
+
+        no_shift = no_shift && sc.span_end == n0 && (sc.span_start <= s0 <= sc.span_end);
+
+        if (no_left_arc)    allowed_moves.set(Move::LEFT_ARC, false);
+        if (no_right_arc)   allowed_moves.set(Move::RIGHT_ARC, false);
+        if (no_shift)       allowed_moves.set(Move::SHIFT, false);
+        if (no_reduce)      allowed_moves.set(Move::REDUCE, false);
+
+    }
+}
+
+LabeledMoveSet ConstrainedArcEager::allowed_labeled_moves(const ParseState &state, const Sentence &sent) {
+    LabeledMoveSet allowed_moves = ArcEager::allowed_labeled_moves(state, sent);
+    enforce_arc_constraints(state, sent, allowed_moves);
+    enforce_span_constraints(state, sent, allowed_moves);
+
+    return allowed_moves;
+}
+
+
+bool SpanConstraint::is_s0_root(const ParseState &state) const {
+    // Check whether the given node is root of the span.
+    // A node is the root if one of the below conditions hold:
+    // - node has a head outside the span
+    // - node has a dependent outside
+    token_index_t s0 = state.stack.back();
+    
+    if (state.heads[s0] < span_start || state.heads[s0] > span_end)
+        return true;
+    
+    int s0_left = state.locations_[state_location::S0_left];
+    int s0_right = state.locations_[state_location::S0_right];
+
+    return (s0_left != -1 && s0_left < span_start) || (s0_right != -1 && s0_right < span_end);
+}
+
+bool SpanConstraint::is_n0_root(const ParseState &state) const {
+    // Check whether the given node is root of the span.
+    // A node is the root if one of the below conditions hold:
+    // - node has a head outside the span
+    // - node has a dependent outside
+    token_index_t n0 = state.n0;
+
+    if (state.heads[n0] < span_start || state.heads[n0] > span_end)
+        return true;
+
+    int n0_left = state.locations_[state_location::N0_left];
+    int n0_right = state.locations_[state_location::N0_right];
+
+    return (n0_left != -1 && n0_left < span_start) || (n0_right != -1 && n0_right < span_end);
+
+}
+
+bool SpanConstraint::has_root(const ParseState &state) const {
+    // TODO Find a more efficient way to check this
+
+    // A node inside the span has a dependent before the span
+    for (int i = 0; i < span_start; i++) {
+        if (span_start <= state.heads[i] <= span_end)
+            return true;
+    }
+
+    // A node inside the span has a dependent after the span
+    for (int i = span_end + 1; i < state.length; i++) {
+        // Is modified by something inside the span
+        if (span_start <= state.heads[i] <= span_end)
+            return true;
+    }
+
+    // A node inside the span has a head outside the span
+    for (int i = span_end; i <= span_end; i++) {
+        if (state.heads[i] < span_start || state.heads[i] > span_end)
+            return true;
+    }
+
+    return false;
 }

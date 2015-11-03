@@ -12,6 +12,7 @@
 #include <regex>
 #include "feature_handling.h"
 
+
 class VwSentenceReader {
 public:
     VwSentenceReader(std::string filename, CorpusDictionary & dictionary);
@@ -19,17 +20,18 @@ public:
     std::vector<Sentence> read();
 private:
     void parse_instance(std::string::const_iterator, std::string::const_iterator);
+    void parse_constraint(std::string::const_iterator, std::string::const_iterator);
     void parse_header(std::string::const_iterator, std::string::const_iterator);
     void parse_body(std::string::const_iterator, std::string::const_iterator);
     void finish_sentence();
     weight_t get_number_or_default(std::string::const_iterator, std::string::const_iterator);
     
-    std::string::const_iterator * error_pos;
+//     std::string::const_iterator * error_pos;
     CorpusDictionary & dictionary;
     std::string filename;
     std::vector<Sentence> corpus;
     size_t line_no;
-    size_t error_line_pos;
+// size_t error_line_pos;
     Sentence sent {};
     Token token {};
     
@@ -54,13 +56,6 @@ public:
     virtual const char* what() const noexcept override;
 
 private:
-//    std::string filename;
-//    std::string line;
-
-
-
-
-
 };
 
 

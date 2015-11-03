@@ -3,7 +3,7 @@ project(HANSTHOLM)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -O0")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Wno-unused-local-typedef -O0")
 
 set(SOURCE_FILES src/features.cc
     src/input.cc src/learn.cc src/parse.cc
@@ -20,6 +20,7 @@ add_library (libhanstholm ${SOURCE_FILES})
 
 option(HANSTHOLM_BUILD_TESTS "Build Hanstholm tests" OFF)
 
+
 # set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
 
 
@@ -35,6 +36,7 @@ if(Boost_FOUND)
   message("Boost_LIBRARIES is ${Boost_LIBRARIES}")
   target_link_libraries(hanstholm ${Boost_LIBRARIES} libhanstholm)
 endif()
+
 
 if(HANSTHOLM_BUILD_TESTS)
     add_subdirectory(test)

@@ -38,7 +38,9 @@ public:
 
     TransitionParser(CorpusDictionary &dict, std::unique_ptr<UnionList> &feature_builder_, TransitionSystem &strategy_,
                      size_t num_rounds = 5)
-            : corpus_dictionary(dict), num_rounds(num_rounds), feature_builder(std::move(feature_builder_)), strategy(strategy_) {
+            : corpus_dictionary(dict), num_rounds(num_rounds), feature_builder(std::move(feature_builder_)),
+              strategy(strategy_) {
+
         labeled_move_list = strategy.moves(corpus_dictionary.label_to_id.size());
         num_labeled_moves = labeled_move_list.size();
         weights = WeightMap(num_labeled_moves);
@@ -72,7 +74,7 @@ private:
 
     void finish_learn();
 
-    LabeledMove & argmax_move(LabeledMoveSet &allowed);
+    LabeledMove &argmax_move(LabeledMoveSet &allowed);
 
 };
 

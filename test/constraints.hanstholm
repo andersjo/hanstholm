@@ -1,0 +1,8 @@
+1-nsubj '0-John|w John |p NOUN
+-1-root '1-loves|w loves |p VERB
+1-dobj '2-Mary|w Mary |p NOUN
+2-name '3-Louise|w Louise |p NOUN
+5-case '4-from|w from |p ADP
+1-nmod '5-Gröningen|w Gröningen |p NOUN
+#arc 1-0 1-2
+#span 2-3

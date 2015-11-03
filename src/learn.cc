@@ -21,7 +21,7 @@ void TransitionParser::fit(std::vector<Sentence> &sentences) {
                 score_moves(features);
 
                 // Get the best next move according to current parameters.
-                auto allowed_moves = strategy.allowed_labeled_moves(state);
+                auto allowed_moves = strategy.allowed_labeled_moves(state, sent);
                 auto oracle_moves = strategy.oracle(state, sent);
                 LabeledMove & pred_move = argmax_move(allowed_moves);
                 LabeledMove & gold_move = argmax_move(oracle_moves);
@@ -34,6 +34,8 @@ void TransitionParser::fit(std::vector<Sentence> &sentences) {
                     num_updates++;
                     do_update(features, pred_move, gold_move);
                 }
+
+                // Error exploration?
 
                 perform_move(gold_move, state, sent.tokens);
                 features.clear();
@@ -112,7 +114,7 @@ ParseResult TransitionParser::parse(const Sentence &sent) {
     while (!state.is_terminal()) {
         feature_builder->fill_features(state, sent, features, 0);
         score_moves(features);
-        auto allowed_moves = strategy.allowed_labeled_moves(state);
+        auto allowed_moves = strategy.allowed_labeled_moves(state, sent);
 
         LabeledMove & pred_move = argmax_move(allowed_moves);
         perform_move(pred_move, state, sent.tokens);

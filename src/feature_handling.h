@@ -1,5 +1,5 @@
-#ifndef PARSE_H
-#define PARSE_H
+#ifndef FEATURE_HANDLING_H
+#define FEATURE_HANDLING_H
 
 #include <vector>
 #include <list>
@@ -95,13 +95,6 @@ struct Token {
     const attribute_vector & find_namespace(namespace_t ns, namespace_t token_specific_ns = -1) const;
 };
 
-
-struct Sentence {
-	std::vector <Token> tokens;
-	bool has_edge(token_index_t, token_index_t) const;
-    unsigned int unlabeled_score(std::vector<token_index_t>);
-};
-
 struct ParseResult {
     std::vector<token_index_t> heads;
     std::vector<label_type_t> labels;
@@ -112,6 +105,43 @@ struct ParseResult {
         assert(heads.size() == labels.size());
     };
 };
+
+struct ArcConstraint {
+    token_index_t head;
+    token_index_t dep;
+    label_type_t label;
+
+    ArcConstraint() = default;
+    ArcConstraint(token_index_t head, token_index_t dep, label_type_t label) : head(head), dep(dep), label(label) { }
+};
+
+struct ParseState;
+
+struct SpanConstraint {
+    token_index_t span_start;
+    token_index_t span_end;
+    bool permit_root_deps = true;
+
+    SpanConstraint() = default;
+    SpanConstraint(token_index_t span_end, token_index_t span_start) : span_start(span_start), span_end(span_end)  { }
+    bool is_inside(token_index_t index) const {
+        return span_start <= index <= span_end;
+    }
+
+    bool has_root(const ParseState &state) const;
+    bool is_s0_root(const ParseState &state) const;
+    bool is_n0_root(const ParseState &state) const;
+};
+
+struct Sentence {
+	std::vector <Token> tokens;
+    std::vector <ArcConstraint> arc_constraints;
+    std::vector <SpanConstraint> span_constraints;
+
+	bool has_edge(token_index_t, token_index_t) const;
+    unsigned int unlabeled_score(std::vector<token_index_t>);
+};
+
 
 namespace state_location {
     enum LocationName {
@@ -126,6 +156,7 @@ namespace state_location {
         N2, // Third element in buffer
         N0_left, // Leftmost modifier of N0
         N0_left2, // The second leftmost modifier of N0
+        N0_right, // Rightmost modifier of N0
         COUNT
     };
 
@@ -140,7 +171,8 @@ namespace state_location {
             {"N1", N1},
             {"N2", N2},
             {"N0_left", N0_left},
-            {"N0_left2", N0_left2}
+            {"N0_left2", N0_left2},
+            {"N0_right", N0_right}
     };
 
 }
@@ -158,9 +190,9 @@ struct ParseState {
 
     ParseState(size_t length);
 	void add_edge(token_index_t head, token_index_t dep, label_type_t label);
-    
+
     void update_locations();
-    
+
     int find_left_dep(token_index_t middle, token_index_t start) const;
     int find_right_dep(token_index_t middle, token_index_t end) const;
 
@@ -239,15 +271,19 @@ void perform_move(LabeledMove move, ParseState &state, const std::vector<Token> 
 struct TransitionSystem {
     virtual LabeledMoveSet oracle(const ParseState & state, const Sentence & sent) = 0;
     virtual std::vector<LabeledMove> moves(size_t num_labels) = 0;
-    virtual LabeledMoveSet allowed_labeled_moves(const ParseState & state) = 0;
-
+    virtual LabeledMoveSet allowed_labeled_moves(const ParseState & state, const Sentence & sent) = 0;
 };
 
 struct ArcEager : TransitionSystem {
-    using ParseState = ::ParseState;
     LabeledMoveSet oracle(const ParseState & state, const Sentence & sent) override;
     std::vector<LabeledMove> moves(size_t num_labels) override;
-    LabeledMoveSet allowed_labeled_moves(const ParseState & state) override;
+    LabeledMoveSet allowed_labeled_moves(const ParseState & state, const Sentence & sent) override;
 };
+
+struct ConstrainedArcEager : ArcEager {
+    LabeledMoveSet allowed_labeled_moves(const ParseState & state, const Sentence & sent) override;
+};
+
+
 
 #endif

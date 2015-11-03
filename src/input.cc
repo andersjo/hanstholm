@@ -13,6 +13,9 @@
 #include <string> // getline
 #include <vector>
 #include <regex>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/lexical_cast.hpp>
+#include <cstdlib>
 
 #include "input.h"
 
@@ -35,6 +38,46 @@ void VwSentenceReader::parse_instance(string::const_iterator instance_begin, str
     } else {
         throw input_parse_error("Bar '|' not found", 0);
     }
+}
+
+
+void VwSentenceReader::parse_constraint(string::const_iterator constraint_begin, string::const_iterator constraint_end) {
+    // FIXME slow with lots of copying
+    std::stringstream ss(string(constraint_begin, constraint_end));
+    string constraint_type;
+    ss >> constraint_type;
+
+
+    if (constraint_type == "arc") {
+        while (!ss.eof()) {
+            sent.arc_constraints.emplace_back();
+            ArcConstraint &arc_constraint = sent.arc_constraints.back();
+            arc_constraint.label = -1;
+            ss >> arc_constraint.head;
+            if (ss.peek() != '-')
+                throw input_parse_error("Invalid constraint format", 0);
+            ss.seekg(1, ss.cur);
+            ss >> arc_constraint.dep;
+            ss >> std::ws;
+        }
+
+    } else if (constraint_type == "span") {
+        while (!ss.eof()) {
+            sent.span_constraints.emplace_back();
+            SpanConstraint &span_constraint = sent.span_constraints.back();
+            ss >> span_constraint.span_start;
+            if (ss.peek() != '-')
+                throw input_parse_error("Invalid constraint format", 0);
+            ss.seekg(1, ss.cur);
+            ss >> span_constraint.span_end;
+            ss >> std::ws;
+        }
+    } else {
+        throw input_parse_error("Line expected to specify constraints and start with one of {arc, span}", 0);
+    }
+
+
+
 }
 
 void VwSentenceReader::parse_header(string::const_iterator header_begin, string::const_iterator header_end) {
@@ -101,6 +144,8 @@ void VwSentenceReader::parse_namespace_decl(string::const_iterator start_of_toke
         auto dash_pos = ns_name.find('-');
         if (dash_pos != string::npos) {
             ns_name = ns_name.substr(0, dash_pos);
+            if (ns_name.size() == 0)
+                throw input_parse_error("Invalid namespace format", 0);
             dependent_on_index = stoi(ns_name.substr(dash_pos + 1));
         }
     } else {
@@ -132,6 +177,21 @@ weight_t VwSentenceReader::get_number_or_default(string::const_iterator str_pos,
 }
 
 
+class ArcConstraintLineParser {
+
+
+    std::vector<ArcConstraint> parse_line(string &line) {
+        std::vector<ArcConstraint> constraints;
+        std::stringstream ss(line);
+
+
+
+
+        return constraints;
+    };
+};
+
+
 vector<Sentence> VwSentenceReader::read() {
     std::ifstream infile(filename);
     if (!infile.good())
@@ -148,7 +208,14 @@ vector<Sentence> VwSentenceReader::read() {
             } else {
                 // End line with a blank character
                 line.push_back(' ');
-                parse_instance(line.cbegin(), line.cend());
+
+                if (line[0] == '#') {
+                    parse_constraint(line.cbegin() + 1, line.cend());
+                } else {
+                    parse_instance(line.cbegin(), line.cend());
+                }
+
+
             }
             line_no++;
         }
