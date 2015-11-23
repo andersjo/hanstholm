@@ -28,15 +28,6 @@ bool Sentence::has_edge(token_index_t i, token_index_t j) const {
 	return tokens[i].head == j || tokens[j].head == i;
 }
 
-unsigned int Sentence::unlabeled_score(vector<token_index_t> pred_heads) {
-    assert(pred_heads.size() == tokens.size());
-    unsigned int uas = 0;
-    for (int i = 0; i < tokens.size(); i++) {
-        uas += (pred_heads[i] == tokens[i].head);
-    }
-
-    return uas;
-}
 
 ParseState::ParseState(size_t length) : length(length) {
     assert(length >= 2);
@@ -406,7 +397,7 @@ void enforce_span_constraints(const ParseState &state, const Sentence &sent, Lab
         const bool has_root = n0_is_root || s0_is_root || sc.has_root(state);
         assert(!(s0_is_root && n0_is_root));
 
-        bool no_left_arc = false;
+
         bool no_right_arc = false;
         bool no_shift = false;
         bool no_reduce = false;
@@ -414,18 +405,19 @@ void enforce_span_constraints(const ParseState &state, const Sentence &sent, Lab
         //
         // LEFT-ARC (S|i, j|B): adds (j, i), pops i from S
         //
+        bool no_left_arc = false;
 
         // S0 is span root, but we are trying to make it a dependent of N0
-        no_left_arc &= s0_is_root && n0_inside;
+        no_left_arc |= s0_is_root && n0_inside;
 
         // S0 is not the span root, but we are trying to make it the dependent of something outside of the span
-        no_left_arc &= has_root && !s0_is_root && !n0_inside;
+        no_left_arc |= has_root && !s0_is_root && !n0_inside;
 
         // We're trying to make N0 the head of something outside the span, but it is not the root
-        no_left_arc &= sc.permit_root_deps && n0_inside && !s0_inside && has_root && !n0_is_root;
+        no_left_arc |= sc.permit_root_deps && n0_inside && !s0_inside && has_root && !n0_is_root;
 
         // We're trying to make N0 the head of a node outside the span, but we don't allow outside dependencies
-        no_left_arc &= !sc.permit_root_deps && n0_inside && !s0_inside;
+        no_left_arc |= !sc.permit_root_deps && n0_inside && !s0_inside;
 
         //
         // RIGHT-ARC (S|i, j|B): adds (i, j), pushes j on S
@@ -434,7 +426,7 @@ void enforce_span_constraints(const ParseState &state, const Sentence &sent, Lab
         // We can only add an edge from S0 to outside the span if S0 is the root,
         // and no span nodes remain on the stack.
         if (sc.span_end == s0) {
-            no_right_arc = no_right_arc && !s0_is_root;
+            no_right_arc |= !s0_is_root;
 
             if (state.stack.size() > 1) {
                 const auto s1 = *(state.stack.cend() - 2);
@@ -443,16 +435,16 @@ void enforce_span_constraints(const ParseState &state, const Sentence &sent, Lab
         }
 
         // We're trying to make S0 head of N0, but N0 is span root.
-        no_right_arc = no_right_arc && n0_is_root && s0_inside;
+        no_right_arc |= n0_is_root && s0_inside;
 
         // Although N0 is not span root, we're trying to make it a dependent of something outside the span
-        no_right_arc = no_right_arc && !n0_is_root && !s0_inside;
+        no_right_arc |= !n0_is_root && !s0_inside;
 
         // We're giving S0 a dependent outside the span, but that's not allowed
-        no_right_arc = no_right_arc && !sc.permit_root_deps && !n0_inside;
+        no_right_arc |= !sc.permit_root_deps && !n0_inside;
 
         // We're giving S0 a dependent outside the span, but S0 is not the root
-        no_right_arc = no_right_arc && sc.permit_root_deps && !s0_is_root;
+        no_right_arc |= sc.permit_root_deps && !s0_is_root;
 
         //
         // REDUCE (S|i, j|B): pops i from S
@@ -470,7 +462,7 @@ void enforce_span_constraints(const ParseState &state, const Sentence &sent, Lab
         // it unavailable for further attachments inside the span.
         // The span must therefore have no unfinished nodes.
 
-        no_shift = no_shift && sc.span_end == n0 && (sc.span_start <= s0 <= sc.span_end);
+        no_shift |= sc.span_end == n0 && (sc.span_start <= s0 <= sc.span_end);
 
         if (no_left_arc)    allowed_moves.set(Move::LEFT_ARC, false);
         if (no_right_arc)   allowed_moves.set(Move::RIGHT_ARC, false);
@@ -545,4 +537,31 @@ bool SpanConstraint::has_root(const ParseState &state) const {
     }
 
     return false;
+}
+
+void Sentence::score(const ParseResult &result, ParseScore &parse_score) const {
+    assert(result.heads.size() == tokens.size());
+
+    for (int i = 0; i < tokens.size(); i++) {
+        bool head_correct = result.heads[i] == tokens[i].head;
+        bool label_correct = result.labels[i] == tokens[i].label;
+
+        parse_score.num_correct_unlabeled += head_correct;
+        parse_score.num_correct_labeled += (head_correct && label_correct);
+        parse_score.num_total += 1;
+    }
+}
+
+float ParseScore::las() {
+    if (num_total > 0)
+        return static_cast<float>(num_correct_labeled) / num_total;
+    else
+        return 0;
+}
+
+float ParseScore::uas() {
+    if (num_total > 0)
+        return static_cast<float>(num_correct_unlabeled) / num_total;
+    else
+        return 0;
 }

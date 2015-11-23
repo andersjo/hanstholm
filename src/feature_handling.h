@@ -106,6 +106,15 @@ struct ParseResult {
     };
 };
 
+struct ParseScore {
+    unsigned int num_correct_unlabeled = 0;
+    unsigned int num_correct_labeled = 0;
+    unsigned int num_total = 0;
+    float uas();
+    float las();
+};
+
+
 struct ArcConstraint {
     token_index_t head;
     token_index_t dep;
@@ -139,7 +148,7 @@ struct Sentence {
     std::vector <SpanConstraint> span_constraints;
 
 	bool has_edge(token_index_t, token_index_t) const;
-    unsigned int unlabeled_score(std::vector<token_index_t>);
+    void score(const ParseResult &result, ParseScore &parse_score) const;
 };
 
 

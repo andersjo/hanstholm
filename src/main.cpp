@@ -8,9 +8,11 @@
 
 #include <boost/program_options.hpp>
 #include <fstream>
+#include <iomanip>
 
 
 using namespace std;
+
 
 void train_test_parser(string data_file, string eval_file, string pred_file, string template_file, int num_passes) {
     // Read corpus
@@ -47,6 +49,7 @@ void train_test_parser(string data_file, string eval_file, string pred_file, str
     }
 
     bool first_sent = true;
+    ParseScore parse_score {};
     for (const auto & sent : test_sents) {
         if (first_sent)
             first_sent = false;
@@ -55,7 +58,16 @@ void train_test_parser(string data_file, string eval_file, string pred_file, str
 
         parsed_sentence = parser.parse(sent);
         output_parse_result(ofs, sent, parsed_sentence, id_to_label);
+        sent.score(parsed_sentence, parse_score);
     }
+
+    cerr << "Test set results (" << test_sents.size() << " sentences" << ")\n";
+    cerr << "   UAS: " << parse_score.num_correct_unlabeled << "/" << parse_score.num_total;
+    cerr << " = "  << (parse_score.uas() * 100) << "\n";
+    cerr << "   LAS: " << parse_score.num_correct_labeled << "/" << parse_score.num_total;
+    cerr << " = " << (parse_score.las() * 100) << "\n";
+
+
 }
 
 void test_hashtable_block() {
@@ -168,13 +180,13 @@ int main(int argc, const char* argv[]) {
         }
 
 
-    }
-    catch(exception& e) {
-        cerr << "error: " << e.what() << "\n";
+    } catch (input_parse_error *e) {
+        cerr << "Error while parsing input file: " << e->what() << "\n";
         return 1;
-    }
-    catch(...) {
-        cerr << "Exception of unknown type!\n";
+
+    } catch(exception  *e) {
+        cerr << "error: " << e->what() << "\n";
+        return 1;
     }
 
     return 0;
