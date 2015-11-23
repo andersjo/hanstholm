@@ -223,9 +223,9 @@ vector<Sentence> VwSentenceReader::read() {
         if (sent.tokens.size() > 0)
             finish_sentence();
 
-    } catch (input_parse_error e) {
-        e.line_no = line_no;
-        e.filename = filename;
+    } catch (input_parse_error *e) {
+        e->line_no = line_no;
+        e->filename = filename;
         throw e;
     }
 
@@ -249,12 +249,18 @@ void VwSentenceReader::finish_sentence() {
     for (auto &token : sent.tokens) {
         if (token.head == -1)
             token.head = root_token.index;
+
+        if (token.head >= 0 && token.head >= sent.tokens.size()) {
+            throw new input_parse_error("Token " + token.id + " has a head " +
+                                                to_string(token.head) + ", which is outside the sentence", 0);
+        }
     }
 
     root_token.head = -1;
 
     // Check sentence consistency
     assert(sent.tokens.size() >= 2);
+
 
     // Add finished sentence to corpus
     corpus.push_back(sent);
