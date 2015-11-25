@@ -226,6 +226,7 @@ void perform_move(LabeledMove lmove, ParseState &state, const vector<Token> &tok
             throw std::runtime_error("Invalid move");
     }
     state.update_locations();
+
 }
 
 

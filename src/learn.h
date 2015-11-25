@@ -79,6 +79,7 @@ private:
 
 
 ParseResult random_parse(const Sentence &sent, TransitionSystem &strategy, bool verbose=false);
+void update_span_states(const LabeledMove &lmove, ParseState &state, const Sentence &sent);
 
 #endif
 

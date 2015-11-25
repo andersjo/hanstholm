@@ -13,6 +13,17 @@
 
 using namespace std;
 
+int count_arc_constraints(std::vector<Sentence> &sentences) {
+    return std::accumulate(sentences.cbegin(), sentences.cend(), 0,
+                    [](int sum, const Sentence &sent) { return sent.arc_constraints.size();} );
+};
+
+int count_span_constraints(std::vector<Sentence> &sentences) {
+    return std::accumulate(sentences.cbegin(), sentences.cend(), 0,
+                           [](int sum, const Sentence &sent) { return sent.span_constraints.size();} );
+};
+
+
 
 void train_test_parser(string data_file, string eval_file, string pred_file, string template_file, int num_passes) {
     // Read corpus
@@ -25,14 +36,30 @@ void train_test_parser(string data_file, string eval_file, string pred_file, str
 
     cerr << "Using " << num_passes << " passes\n";
 
-    // FIXME Find a good to pass ownership
+    // Read features
     auto feature_set = read_feature_file(template_file, dict);
     cerr << "Using feature definition:\n";
     cerr << feature_set->name << "\n";
 
+    // Strategy
+    std::unique_ptr<TransitionSystem> strategy(new ArcEager());
 
-    auto strategy = ArcEager();
-    auto parser = TransitionParser(dict, feature_set, strategy, num_passes);
+//    TransitionSystem *strategy = new ArcEager();
+
+    // Check if any constraints are specified
+    auto num_arc_constraints_train = count_arc_constraints(train_sents);
+    auto num_arc_constraints_test = count_arc_constraints(test_sents);
+    auto num_span_constraints_train = count_span_constraints(train_sents);
+    auto num_span_constraints_test = count_span_constraints(test_sents);
+//
+    if (num_arc_constraints_train + num_arc_constraints_test + num_span_constraints_train + num_span_constraints_test > 0) {
+        strategy.reset(new ConstrainedArcEager());
+        cerr << "Using constrained parsing. Arc constraints: (train: ";
+        cerr << num_arc_constraints_train << ", test: " << num_arc_constraints_test << "). ";
+        cerr << "Span constraints (train: " << num_span_constraints_train << ", test: " << num_span_constraints_test << ").\n";
+    }
+
+    auto parser = TransitionParser(dict, feature_set, *strategy, num_passes);
     parser.fit(train_sents);
 
     ParseResult parsed_sentence;

@@ -12,7 +12,7 @@ void TransitionParser::fit(std::vector<Sentence> &sentences) {
 
 
         for (auto sent : sentences) {
-            auto state = ParseState(sent.tokens.size());
+            auto state = ParseState(sent.tokens.size(), sent.span_constraints.size());
 
             while (!state.is_terminal()) {
                 num_tokens_seen++;
@@ -28,6 +28,8 @@ void TransitionParser::fit(std::vector<Sentence> &sentences) {
                 LabeledMove & pred_move = argmax_move(allowed_moves);
                 LabeledMove & gold_move = argmax_move(oracle_moves);
 
+                assert(allowed_moves.test(gold_move));
+
                 // If predicted move and gold move are not identical,
                 // update the model with the difference between the
                 // feature representations of the two moves.
@@ -38,7 +40,8 @@ void TransitionParser::fit(std::vector<Sentence> &sentences) {
                 }
 
                 // Error exploration?
-
+                if (state.span_states.size() > 0)
+                    update_span_states(gold_move, state, sent);
                 perform_move(gold_move, state, sent.tokens);
                 features.clear();
 
@@ -59,7 +62,6 @@ void TransitionParser::do_update(vector<FeatureKey> &features, LabeledMove &pred
     weights.num_updates++;
     for (const auto &feature : features) {
         // Idea: separate update step to a function
-        // FIXME: Check that features are unique and do not occur multiple times in the feature vector
         auto section = weights.get_or_insert_section(feature);
 
         auto *w = section.weights();
@@ -111,7 +113,7 @@ void TransitionParser::finish_learn() {
 
 ParseResult TransitionParser::parse(const Sentence &sent) {
     std::vector<FeatureKey> features;
-    auto state = ParseState(sent.tokens.size());
+    auto state = ParseState(sent.tokens.size(), sent.span_constraints.size());
 
     while (!state.is_terminal()) {
         feature_builder->fill_features(state, sent, features, 0);
@@ -119,6 +121,10 @@ ParseResult TransitionParser::parse(const Sentence &sent) {
         auto allowed_moves = strategy.allowed_labeled_moves(state, sent);
 
         LabeledMove & pred_move = argmax_move(allowed_moves);
+
+        if (state.span_states.size() > 0)
+            update_span_states(pred_move, state, sent);
+
         perform_move(pred_move, state, sent.tokens);
 
         features.clear();
@@ -149,7 +155,6 @@ LabeledMove TransitionParser::compute_gold_move(Sentence &sent, ParseState &stat
     // Get zero cost moves.
     LabeledMoveSet zero_cost_labeled_moves = strategy.oracle(state, sent);
 
-    // FIXME find lowest number possible
     weight_t best_score = -std::numeric_limits<weight_t>::infinity();
     LabeledMove *gold_move_ptr = nullptr;
     for (int i = 0; i < num_labeled_moves; i++) {
