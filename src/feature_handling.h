@@ -133,13 +133,9 @@ struct SpanConstraint {
 
     SpanConstraint() = default;
     SpanConstraint(token_index_t span_end, token_index_t span_start) : span_start(span_start), span_end(span_end)  { }
-    bool is_inside(token_index_t index) const {
-        return span_start <= index <= span_end;
+    inline bool is_inside(token_index_t index) const {
+        return (index >= span_start) && (index <= span_end);
     }
-
-    bool has_root(const ParseState &state) const;
-    bool is_s0_root(const ParseState &state) const;
-    bool is_n0_root(const ParseState &state) const;
 };
 
 struct Sentence {
@@ -188,6 +184,12 @@ namespace state_location {
 
 using state_location_t = std::array<token_index_t, state_location::LocationName::COUNT>;
 
+struct SpanState {
+    size_t num_connected_components;
+    token_index_t designated_root;
+    SpanState() : num_connected_components(0), designated_root(-1) { };
+};
+
 
 struct ParseState {
 	size_t length;
@@ -196,8 +198,12 @@ struct ParseState {
 	std::vector<token_index_t> heads;
     std::vector<label_type_t> labels;
     state_location_t locations_ {};
+    std::vector<SpanState> span_states {};
 
     ParseState(size_t length);
+    ParseState(size_t length, size_t num_span_constraints);
+    // FIXME span constraints starting at the first node won't work
+
 	void add_edge(token_index_t head, token_index_t dep, label_type_t label);
 
     void update_locations();
@@ -209,9 +215,12 @@ struct ParseState {
     bool has_head_in_stack(token_index_t, const Sentence &) const;
     bool has_dep_in_buffer(token_index_t, const Sentence &) const;
     bool has_dep_in_stack(token_index_t, const Sentence &) const;
+    void print_state();
 
     bool is_terminal();
 };
+
+
 
 
 
@@ -234,6 +243,7 @@ struct LabeledMove {
     }
     
 };
+
 
 class LabeledMoveSet {
 public:

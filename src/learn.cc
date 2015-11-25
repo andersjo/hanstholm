@@ -1,4 +1,6 @@
+#include <random>
 #include "learn.h"
+#include "feature_handling.h"
 
 void TransitionParser::fit(std::vector<Sentence> &sentences) {
     std::vector<FeatureKey> features;
@@ -177,4 +179,109 @@ LabeledMove & TransitionParser::argmax_move(LabeledMoveSet &allowed) {
     assert(best_index > -1);
 
     return labeled_move_list[best_index];
+}
+
+
+std::ostream& operator <<(std::ostream& os, const Move& move) {
+    switch (move) {
+        case Move::LEFT_ARC:
+            os << "LEFT_ARC";
+            break;
+        case Move::REDUCE:
+            os << "REDUCE";
+            break;
+        case Move::RIGHT_ARC:
+            os << "RIGHT_ARC";
+            break;
+        case Move::SHIFT:
+            os << "SHIFT";
+            break;
+        case Move::COUNT:
+            os << "COUNT";
+    }
+    return os;
+};
+
+
+void update_span_states(const LabeledMove &lmove, ParseState &state, const Sentence &sent) {
+    for (size_t i = 0; i < sent.span_constraints.size(); i++) {
+        auto &span_state = state.span_states.at(i);
+        auto &sc = sent.span_constraints.at(i);
+        auto &stack = state.stack;
+
+//        if (lmove.move == Move::LEFT_ARC && sc.is_inside(state.n0) && sc.is_inside(stack.back())) {
+//            assert(span_state.num_connected_components >= 1);
+//        }
+
+        switch (lmove.move) {
+            case Move::SHIFT:
+                // A node of the span is shifted onto the stack
+                if (sc.is_inside(state.n0))
+                    span_state.num_connected_components += 1;
+                break;
+            case Move::RIGHT_ARC:
+                // The first node of the span is inserted into the stack
+                if (sc.span_start == state.n0)
+                    span_state.num_connected_components = 1;
+                break;
+            case Move::LEFT_ARC:
+                // Two nodes of the span become connected
+                if (sc.is_inside(state.n0) && sc.is_inside(stack.back()))
+                    span_state.num_connected_components -= 1;
+                break;
+            case Move::REDUCE:
+                break;
+            default:
+                throw std::runtime_error("Invalid move");
+        }
+
+
+        if (lmove.move == Move::RIGHT_ARC || lmove.move == Move::LEFT_ARC) {
+            bool s0_inside = sc.is_inside(stack.back());
+            bool n0_inside = sc.is_inside(state.n0);
+            if ((s0_inside && !n0_inside) || (!s0_inside && n0_inside )) {
+                span_state.designated_root = s0_inside ? stack.back() : state.n0;
+            }
+        }
+    }
+}
+
+ParseResult random_parse(const Sentence &sent, TransitionSystem &strategy, bool verbose) {
+    std::random_device rd;
+    std::mt19937 g(rd());
+
+    auto state = ParseState(sent.tokens.size(), sent.span_constraints.size());
+
+    auto possible_moves = strategy.moves(1);
+    while (!state.is_terminal()) {
+        // Pick a random move allowed in the current state.
+        // Do this by randomly shuffling the `possible_moves` vector and take the first allowed element.
+        std::shuffle(possible_moves.begin(), possible_moves.end(), g);
+        auto allowed_moves = strategy.allowed_labeled_moves(state, sent);
+
+        bool found_possible_move = false;
+        for (const auto &possible_move : possible_moves) {
+            if (allowed_moves.test(possible_move)) {
+                if (verbose) {
+                    cerr << "Take " << possible_move.move << " in state  ";
+                    state.print_state();
+                }
+
+                update_span_states(possible_move, state, sent);
+                perform_move(possible_move, state, sent.tokens);
+                found_possible_move = true;
+                break;
+            }
+        }
+
+        if (!found_possible_move) {
+            cerr << "Stuck in state ";
+            state.print_state();
+            cerr << "No possible move";
+        }
+
+        assert(found_possible_move);
+    }
+
+    return ParseResult(state.heads, state.labels);
 }

@@ -70,64 +70,6 @@ void train_test_parser(string data_file, string eval_file, string pred_file, str
 
 }
 
-void test_hashtable_block() {
-    size_t block_size = 10;
-    HashTableBlock table(8, block_size);
-
-    for (int i = 1; i < 16; i++) {
-        float * vals = table.insert(i);
-        fill_n(vals, block_size, static_cast<float>(i));
-    }
-
-    cout << "Found ";
-    for (int i = 1; i < 50; i++) {
-        if (table.lookup(i)) {
-            float * vals = table.lookup(i);
-            cout << i << "-" << vals[5] << " ";
-        }
-    }
-    cout << "\n";
-
-
-
-}
-
-void test_feature_set_parser() {
-
-// S0:p + N0:p + ( S0:z @ N0:i )
-// N0:p + f(S0:p, x)
-// head ( N0 ) :p
-
-    // "S0:p + N0:p + (S0:z @ N0:i)"
-    // "N0:p + f(S0:p, x)"
-    // auto tokens = infix_to_prefix(tokenize_line("N0:p + S0:x"));
-    // auto tokens = infix_to_prefix(tokenize_line("S0:p + N0:p + (S0:z @ N0:i)"));
-    // auto tokens = infix_to_prefix(tokenize_line("f(S0:z, N0:i + X:x)"));
-
-    try {
-        auto dict = CorpusDictionary {};
-        auto prefix_tokenized = tokenize_line("N0:p ++ (S0:w ++ S0:p)", dict);
-        auto tokens = infix_to_prefix(prefix_tokenized);
-
-        for (auto & token : tokens)
-            cout <<  "'" << token->content << "' ";
-        cout << "\n";
-
-        auto combined = make_feature_combiner(tokens);
-        cout << "Combined: " << combined->name << "\n";
-
-        read_feature_file("/users/anders/code/hanstholm/src/nivre_small.txt", dict);
-
-    } catch (std::runtime_error * e) {
-        std::cerr << "Exception: " << e->what() << "\n" << endl;
-    }
-
-    // auto combined = make_feature_combiner(tokens);
-    // cout << "\nCombined " << combined.name << "\n";
-
-    // tokenize_line("N0:p + f(S0:p, x)");
-}
-
 namespace po = boost::program_options;
 
 void print_usage(po::options_description desc) {
@@ -143,7 +85,7 @@ int main(int argc, const char* argv[]) {
         string eval_file;
         string pred_file;
         string template_file;
-        int num_passes = 5;
+        size_t num_passes = 5;
 
         po::options_description desc("Allowed options");
         desc.add_options()
@@ -151,7 +93,7 @@ int main(int argc, const char* argv[]) {
                 ("data,d", po::value<std::string>(&data_file)->required(), "input datafile")
                 ("eval,e", po::value<std::string>(&eval_file)->required(), "evaluation file")
                 ("template", po::value<std::string>(&template_file)->required(), "template file (e.g. nivre.txt)")
-                ("passes", po::value<int>(&num_passes), "number of passes over the training set")
+                ("passes", po::value<size_t>(&num_passes), "number of passes over the training set")
                 ("predictions,p", po::value<string>(&pred_file), "write predictions to this file")
                 ("feature_parser", "test feature parser")
                 ;
@@ -184,7 +126,7 @@ int main(int argc, const char* argv[]) {
         cerr << "Error while parsing input file: " << e->what() << "\n";
         return 1;
 
-    } catch(exception  *e) {
+    } catch(exception *e) {
         cerr << "error: " << e->what() << "\n";
         return 1;
     }

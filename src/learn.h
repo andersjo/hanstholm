@@ -62,7 +62,6 @@ private:
     CorpusDictionary &corpus_dictionary;
     size_t num_rounds = 5;
     WeightMap weights;
-    // FeatureBuilder2 feature_builder_old;
     std::unique_ptr<UnionList> feature_builder;
 
     std::vector<LabeledMove> labeled_move_list;
@@ -78,6 +77,8 @@ private:
 
 };
 
+
+ParseResult random_parse(const Sentence &sent, TransitionSystem &strategy, bool verbose=false);
 
 #endif
 

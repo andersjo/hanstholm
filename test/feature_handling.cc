@@ -55,7 +55,7 @@ TEST_CASE( "arc and span constraints are read" ) {
 
     // Read in a test sentence
     // FIXME reference this in a relative way
-    auto reader = VwSentenceReader("/users/anders/code/hanstholm/test/constraints.hanstholm", dict);
+    auto reader = VwSentenceReader("/users/anders/code/hanstholm/test/constraints_read.hanstholm", dict);
     auto sentence = reader.read().at(0);
 
     SECTION(" has arc constraint ") {
