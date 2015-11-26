@@ -2,6 +2,7 @@
 // Created by Anders Johannsen on 26/11/2015.
 //
 
+#include <algorithm>
 #include <vector>
 #include <numeric>
 #include "nonproj.h"

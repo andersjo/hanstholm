@@ -16,7 +16,6 @@ TEST_CASE( "Non-projective trees are converted correctly" ) {
 
 
     SECTION( "non-projectivity is detected" ) {
-
         Projectivizer projectivizer = Projectivizer();
 
         REQUIRE_FALSE(projectivizer.is_nonprojective(proj));
