@@ -12,6 +12,7 @@ set(SOURCE_FILES src/features.cc
     src/feature_set_parser.cc
     src/feature_combiner.cc
     src/feature_handling.h
+    src/nonproj.h src/nonproj.cc
     )
 
 # Build library as advised by

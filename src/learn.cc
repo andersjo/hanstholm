@@ -39,7 +39,7 @@ void TransitionParser::fit(std::vector<Sentence> &sentences) {
                     do_update(features, pred_move, gold_move);
                 }
 
-                // Error exploration?
+                // TODO Explore errors?
                 if (state.span_states.size() > 0)
                     update_span_states(gold_move, state, sent);
                 perform_move(gold_move, state, sent.tokens);
@@ -89,7 +89,7 @@ void TransitionParser::do_update(vector<FeatureKey> &features, LabeledMove &pred
 }
 
 void TransitionParser::finish_learn() {
-    // Average weights in a hacky way that exposes details of the hash table better left unexposed.
+    // FIXME Average weights in a hacky way that exposes details of the hash table better left unexposed.
     for (size_t key : weights.table_block.keys) {
         if (key != 0) {
             auto section = weights.get_section(key);

@@ -1,4 +1,4 @@
-set(SOURCE_FILES test_main.cc feature_handling.cc constraints.cc)
+set(SOURCE_FILES test_main.cc feature_handling.cc constraints.cc nonproj.cc)
 
 include_directories(${HANSTHOLM_SOURCE_DIR}/src)
 

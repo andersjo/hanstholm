@@ -130,7 +130,7 @@ LabeledMoveSet ArcEager::oracle(const ParseState & state, const Sentence & sent)
 
     // If we for some reason found no zero-cost moves, simply
     // return all the allowed moves as possibilities
-    // TODO check if zero-cost moves are guaranteed to exist
+    // FIXME check if zero-cost moves are guaranteed to exist
     if (!(moves.test(Move::SHIFT) || moves.test(Move::REDUCE) || moves.test(Move::LEFT_ARC) || moves.test(Move::RIGHT_ARC)))
         return allowed_labeled_moves(state, sent);
 
