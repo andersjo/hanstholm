@@ -9,7 +9,7 @@
 
 int Projectivizer::longest_nonprojective_edge(std::vector<token_index_t> &heads) {
     // Fill with token indexes
-    longest_edges.resize(heads.size());
+    longest_edges.resize(heads.size() - 1);
     std::iota(longest_edges.begin(), longest_edges.end(), 0);
 
     // Sort token indexes according to edge length
@@ -20,6 +20,10 @@ int Projectivizer::longest_nonprojective_edge(std::vector<token_index_t> &heads)
 
     for (auto v : longest_edges) {
         auto u = heads[v];
+        // Skipping the root
+        if (u == heads.size() - 1)
+            continue;
+
         auto first_node = std::min(u, v);
         auto last_node = std::max(u, v);
 
@@ -28,10 +32,25 @@ int Projectivizer::longest_nonprojective_edge(std::vector<token_index_t> &heads)
 
         // Check whether any node spanned by this edge has
         // a head or a dependency outside the span
+
+        // BEFORE
+        for (int i = 0; i < first_node; i++) {
+            if (heads[i] > first_node && heads[i] < last_node)
+                return v;
+        }
+
+        // INSIDE
         for (int i = first_node + 1; i < last_node; i++) {
             if (heads[i] < first_node || heads[i] > last_node)
                 return v;
         }
+
+        // AFTER
+        for (int i = last_node + 1; i < heads.size() - 1; i++) {
+            if (heads.at(i) > first_node && heads.at(i) < last_node)
+                return v;
+        }
+
     }
 
     return -1;
@@ -40,11 +59,13 @@ int Projectivizer::longest_nonprojective_edge(std::vector<token_index_t> &heads)
 void Projectivizer::lift_longest(std::vector<token_index_t> &heads) {
     // This function transforms a non-projective dependency tree into a projective one
     // by re-attaching crossing edges higher in the tree.
+
     // This process is known as "lifting"
     auto v = longest_nonprojective_edge(heads);
     while (v != -1) {
         // The currently longest non-projective edge is (u, v).
         auto u = heads[v];
+
         // Take a step towards resolving the non-projectivity by attaching
         // v higher in the tree.
         heads[v] = heads[u];
@@ -53,17 +74,29 @@ void Projectivizer::lift_longest(std::vector<token_index_t> &heads) {
 }
 
 bool Projectivizer::is_nonprojective(std::vector<token_index_t> &heads) {
-    for (int v = 0; v < heads.size(); v++) {
+    for (int v = 0; v < heads.size() - 1; v++) {
         auto first_node = std::min(v, heads[v]);
         auto last_node = std::max(v, heads[v]);
+        assert(first_node >= 0);
 
         if (last_node - first_node == 1)
             continue;
 
-        // Check whether any node spanned by this edge has
-        // a head or a dependency outside the span
+        // BEFORE
+        for (int i = 0; i < first_node; i++) {
+            if (heads[i] > first_node && heads[i] < last_node)
+                return true;
+        }
+
+        // INSIDE
         for (int i = first_node + 1; i < last_node; i++) {
             if (heads[i] < first_node || heads[i] > last_node)
+                return true;
+        }
+
+        // AFTER
+        for (int i = last_node + 1; i < heads.size(); i++) {
+            if (heads[i] > first_node && heads[i] < last_node)
                 return true;
         }
     }
